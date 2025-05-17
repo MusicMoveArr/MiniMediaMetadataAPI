@@ -1,0 +1,6 @@
+﻿services:
+  minimediametadataapi:
+    image: minimediametadataapi
+    build:
+      context: .
+      dockerfile: MiniMediaMetadataAPI/Dockerfile

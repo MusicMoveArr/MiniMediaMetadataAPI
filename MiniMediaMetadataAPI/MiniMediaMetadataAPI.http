@@ -1,0 +1,6 @@
+@MiniMediaMetadataAPI_HostAddress = http://localhost:5228
+
+GET {{MiniMediaMetadataAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
