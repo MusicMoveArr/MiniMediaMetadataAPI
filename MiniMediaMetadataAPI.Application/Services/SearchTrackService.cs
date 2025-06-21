@@ -11,15 +11,18 @@ public class SearchTrackService
     private readonly SpotifyRepository _spotifyRepository;
     private readonly TidalRepository _tidalRepository;
     private readonly MusicBrainzRepository _musicBrainzRepository;
+    private readonly DeezerRepository _deezerRepository;
     
     public SearchTrackService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
-        MusicBrainzRepository musicBrainzRepository)
+        MusicBrainzRepository musicBrainzRepository,
+        DeezerRepository deezerRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
+        _deezerRepository = deezerRepository;
     }
 
     public async Task<SearchTrackResponse> SearchTrack(
@@ -162,6 +165,44 @@ public class SearchTrackService
                     }));
                 }
             }
+        }
+        if (provider is ProviderType.Any or ProviderType.Deezer && long.TryParse(artistId, out long longArtistId))
+        {
+            var deezerTracks = await _deezerRepository.SearchTrackByArtistIdAsync(trackName, longArtistId, offset);
+            searchResult.AddRange(deezerTracks.Select(track => new SearchTrackEntity
+            {
+                ProviderType = ProviderType.Deezer,
+                Id = track.TrackId.ToString(),
+                Name = track.Title,
+                Popularity = 0,
+                Url = $"https://www.deezer.com/track/{track.TrackId}",
+                Duration = TimeSpan.FromSeconds(track.Duration),
+                Explicit = track.ExplicitLyrics,
+                DiscNumber = track.DiskNumber,
+                TrackNumber = track.TrackPosition,
+                Label = track.Album.Label,
+                ISRC = track.ISRC,
+                
+                Album = new SearchTrackAlbumEntity
+                {
+                    Id = track.Album.AlbumId.ToString(),
+                    ArtistId = track.Album.ArtistId.ToString(),
+                    Name = track.Album.Title,
+                    Type = track.Album.Type,
+                    ReleaseDate = track.Album.ReleaseDate,
+                    TotalTracks = track.Album.NbTracks,
+                    Url = $"https://www.deezer.com/album/{track.AlbumId}",
+                    Label = track.Album.Label,
+                    Popularity = track.Album.Fans,
+                    UPC = track.Album.UPC,
+                    ProviderType = ProviderType.Tidal
+                },
+                Artists = track.Artists?.Select(artist => new SearchTrackArtistEntity
+                {
+                    Id = artist.ArtistId.ToString(),
+                    Name = artist.ArtistName
+                }).ToList()
+            }));
         }
 
         response.SearchResult = searchResult.Any() ? SearchResultType.Ok : SearchResultType.NotFound;

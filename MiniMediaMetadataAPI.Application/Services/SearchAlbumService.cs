@@ -10,15 +10,18 @@ public class SearchAlbumService
     private readonly SpotifyRepository _spotifyRepository;
     private readonly TidalRepository _tidalRepository;
     private readonly MusicBrainzRepository _musicBrainzRepository;
+    private readonly DeezerRepository _deezerRepository;
     
     public SearchAlbumService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
-        MusicBrainzRepository musicBrainzRepository)
+        MusicBrainzRepository musicBrainzRepository,
+        DeezerRepository deezerRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
+        _deezerRepository = deezerRepository;
     }
 
     public async Task<SearchAlbumResponse> SearchAlbum(
@@ -96,6 +99,36 @@ public class SearchAlbumService
                 ReleaseDate = album.Date,
                 TotalTracks = album.TotalTracks,
                 UPC = album.Barcode
+            }));
+        }
+        if (provider is ProviderType.Any or ProviderType.Deezer && long.TryParse(artistId, out long longArtistId))
+        {
+            var deezerAlbums = await _deezerRepository.SearchAlbumByArtistIdAsync(name, longArtistId, offset);
+            searchResult.AddRange(deezerAlbums.Select(album => new SearchAlbumEntity
+            {
+                ProviderType = ProviderType.Deezer,
+                Id = album.AlbumId.ToString(),
+                Name = album.Title,
+                Popularity = 0,
+                Url = $"https://www.deezer.com/album/{album.AlbumId}",
+                UPC = album.UPC,
+                Copyright = string.Empty,
+                Label = album.Label,
+                ReleaseDate = album.ReleaseDate,
+                TotalTracks = album.NbTracks,
+                Type = album.Type,
+                ArtistId = album.ArtistId.ToString(),
+                Images = album.Images?.Select(image => new  SearchAlbumImageEntity
+                {
+                    Width = image.Width,
+                    Height = image.Height,
+                    Url = image.Href
+                }).ToList(),
+                Artists = album.Artists?.Select(artist => new SearchAlbumArtistEntity
+                {
+                    Id = artist.ArtistId.ToString(),
+                    Name = artist.ArtistName
+                }).ToList()
             }));
         }
 
@@ -193,6 +226,37 @@ public class SearchAlbumService
                     UPC = musicBrainzAlbum.Barcode
                 });
             }
+        }
+        if (provider is ProviderType.Deezer && long.TryParse(id, out long longAlbumId))
+        {
+            var deezerAlbum = await _deezerRepository.GetAlbumIdAsync(longAlbumId);
+            searchResult.Add(new SearchAlbumEntity
+            {
+                ProviderType = ProviderType.Deezer,
+                Id = deezerAlbum.AlbumId.ToString(),
+                ArtistId = deezerAlbum.ArtistId.ToString(),
+                Name = deezerAlbum.Title,
+                Popularity = 0,
+                Url = $"https://www.deezer.com/album/{deezerAlbum.AlbumId}",
+                UPC = deezerAlbum.UPC,
+                Copyright = string.Empty,
+                Label = deezerAlbum.Label,
+                ReleaseDate = deezerAlbum.ReleaseDate,
+                TotalTracks = deezerAlbum.NbTracks,
+                Artists = new List<SearchAlbumArtistEntity>([
+                    new SearchAlbumArtistEntity
+                    {
+                        Id = deezerAlbum.Artist.ArtistId.ToString(),
+                        Name = deezerAlbum.Artist.Name,
+                    }
+                ]),
+                Images = deezerAlbum.Images?.Select(image => new  SearchAlbumImageEntity
+                {
+                    Width = image.Width,
+                    Height = image.Height,
+                    Url = image.Href
+                }).ToList()
+            });
         }
 
         response.SearchResult = searchResult.Any() ? SearchResultType.Ok : SearchResultType.NotFound;
