@@ -43,7 +43,7 @@ public class SearchTrackService
                 Id = track.TrackId,
                 Name = track.Name,
                 Popularity = 0,
-                Url = track.PreviewUrl,
+                Url = track.Href,
                 Duration = track.Duration,
                 Explicit = track.Explicit,
                 DiscNumber = track.DiscNumber,
