@@ -1,5 +1,5 @@
 # MiniMedia Metadata API
-At last, an self-hosted Metadata API that supports multiple providers (Spotify, Tidal, MusicBrainz)
+At last, an self-hosted Metadata API that supports multiple providers (Spotify, Tidal, MusicBrainz, Deezer)
 
 The Restful API is quite straightforward, still a work in progress but does work
 
@@ -16,13 +16,14 @@ https://github.com/MusicMoveArr/MusicMover
 1. MusicBrainz
 2. Tidal
 3. Spotify
+4. Deezer
 
 # Features
 1. Low memory footprint (<250MB)
 2. Postgres support
-3. Search Artists Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify)
-4. Search Albums Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify)
-5. Search Tracks Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify)
+3. Search Artists Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer)
+4. Search Albums Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer)
+5. Search Tracks Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer)
 
 ## Docker compose
 ```
