@@ -16,9 +16,10 @@ public class MusicBrainzRepository
     
     public async Task<List<MusicBrainzArtistModel>> SearchArtistAsync(string name, int offset)
     {
-        string query = @"SELECT * 
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT * 
                          FROM MusicBrainz_Artist 
-                         where similarity(lower(@name), lower(name)) >= 0.8";
+                         where lower(name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         
@@ -51,14 +52,15 @@ public class MusicBrainzRepository
     
     public async Task<List<MusicBrainzReleaseModel>> SearchAlbumByArtistIdAsync(string albumName, Guid artistId, int offset)
     {
-        string query = @"SELECT release.*,
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT release.*,
                                 label.*
                          FROM MusicBrainz_Release release
                          left join MusicBrainz_Release_Label mbrl on mbrl.releaseid = release.releaseid
                          left join MusicBrainz_Label label on label.labelid = mbrl.labelid
                          where 
                              release.artistid = @artistId
-                             and similarity(lower(release.title), lower(@albumName)) >= 0.5";
+                             and lower(release.title) % lower(@albumName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
 
@@ -155,7 +157,8 @@ public class MusicBrainzRepository
     
     public async Task<List<MusicBrainzArtistModel>> SearchTrackByArtistIdAsync(string trackName, Guid artistId, int offset)
     {
-        string query = @"select track.ReleaseTrackId,
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         select track.ReleaseTrackId,
 		                        track.RecordingTrackId,
 		                        track.Title,
 		                        track.Status,
@@ -214,7 +217,7 @@ public class MusicBrainzRepository
                          join MusicBrainz_Artist ra on ra.artistid = release.artistid
                          left join MusicBrainz_Release_Label rl on rl.releaseid = release.releaseid
                          left join MusicBrainz_Label label on label.LabelId = rl.labelid
-                         where similarity(lower(track.Title), lower(@trackName)) >= 0.5";
+                         where lower(track.Title) % lower(@trackName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
 

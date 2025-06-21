@@ -16,10 +16,11 @@ public class SpotifyRepository
     
     public async Task<List<SpotifyArtistModel>> SearchArtistAsync(string name, int offset)
     {
-        string query = @"SELECT * 
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT * 
                          FROM spotify_artist sa
                          left join spotify_artist_image sai on sai.artistid = sa.id
-                         where similarity(lower(sa.name), lower(@name)) >= 0.5";
+                         where lower(sa.name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
 
@@ -107,7 +108,8 @@ public class SpotifyRepository
     
     public async Task<List<SpotifyAlbumModel>> SearchAlbumByArtistIdAsync(string albumName, string artistId, int offset)
     {
-        string query = @"SELECT sa.*,
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT sa.*,
                                 saa.*,
                                 sa2.name as ArtistName,
                                 sai.*,
@@ -117,7 +119,7 @@ public class SpotifyRepository
                          join spotify_artist sa2 on sa2.id = saa.artistid
                          left join spotify_album_image sai on sai.albumid = sa.albumid
                          left join spotify_album_externalid sae on sae.albumid = sa.albumid
-                         where similarity(lower(sa.name), lower(@albumName)) >= 0.5
+                         where lower(sa.name) % lower(@albumName)
                          and (exists (select 1 from spotify_album_artist saa2 
                                               where saa2.albumid = sa.albumid 
                                                 and saa2.artistid = @artistId)
@@ -274,7 +276,8 @@ public class SpotifyRepository
     
     public async Task<List<SpotifyTrackModel>> SearchTrackByArtistIdAsync(string trackName, string artistId, int offset)
     {
-        string query = @"SELECT st.TrackId, 
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT st.TrackId, 
                                 st.AlbumId, 
                                 st.DiscNumber, 
                                 to_timestamp(st.durationms / 1000.0)::time as Duration,
@@ -300,7 +303,7 @@ public class SpotifyRepository
                          join spotify_album album on album.AlbumId = st.albumid
                          join spotify_album_externalid sae2 on sae2.AlbumId = album.albumid
                          
-                         where similarity(lower(st.Name), lower(@trackName)) >= 0.5
+                         where lower(st.Name) % lower(@trackName)
                          and (exists (select 1 from spotify_track_artist sta2 
                                               where sta2.trackid = st.trackid 
                                                 and sta2.artistid = @artistId)

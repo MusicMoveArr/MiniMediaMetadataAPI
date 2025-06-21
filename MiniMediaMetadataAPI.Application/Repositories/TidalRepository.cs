@@ -16,10 +16,11 @@ public class TidalRepository
     
     public async Task<List<TidalArtistModel>> SearchArtistAsync(string name, int offset)
     {
-        string query = @"SELECT * 
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT * 
                          FROM tidal_artist ta
                          left join tidal_artist_image_link tai on tai.artistid = ta.artistid
-                         where similarity(ta.name, @name) >= 0.8";
+                         where lower(ta.name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         
@@ -78,7 +79,8 @@ public class TidalRepository
     
     public async Task<List<TidalAlbumModel>> SearchAlbumByArtistIdAsync(string albumName, int artistId, int offset)
     {
-        string query = @"SELECT album.albumid,
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT album.albumid,
                                 album.artistid,
                                 album.title,
                                 album.barcodeid,
@@ -100,7 +102,7 @@ public class TidalRepository
                          left join tidal_album_external_link sae on sae.albumid = album.albumid
                          where 
                              album.artistid = @artistId
-                             and similarity(lower(album.title), lower(@albumName)) >= 0.5";
+                             and lower(album.title) % lower(@albumName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
 
@@ -243,7 +245,8 @@ public class TidalRepository
     
     public async Task<List<TidalTrackModel>> SearchTrackByArtistIdAsync(string trackName, int artistId, int offset)
     {
-        string query = @"SELECT tt.TrackId, 
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
+                         SELECT tt.TrackId, 
                                 tt.AlbumId, 
                                 tt.Title, 
                                 tt.ISRC,
@@ -281,7 +284,7 @@ public class TidalRepository
                          join tidal_track_external_link tte on tte.trackid = tt.trackid
                          join tidal_album_external_link tae on tae.AlbumId = album.albumid
                          
-                         where similarity(lower(tt.Title || ' ' || tt.version), lower(@trackName)) >= 0.5";
+                         where lower(tt.Title || ' ' || tt.version) % lower(@trackName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
 

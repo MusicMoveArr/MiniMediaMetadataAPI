@@ -16,11 +16,11 @@ public class DeezerRepository
     
     public async Task<List<DeezerArtistModel>> SearchArtistAsync(string name, int offset)
     {
-        string query = @"SET pg_trgm.similarity_threshold = 0.5;
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT *
                          FROM deezer_artist da
                          JOIN deezer_artist_image_link dai ON dai.artistid = da.artistid
-                         where da.name % @name";
+                         where lower(da.name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         
@@ -107,7 +107,7 @@ public class DeezerRepository
     
     public async Task<List<DeezerAlbumModel>> SearchAlbumByArtistIdAsync(string albumName, long artistId, int offset)
     {
-        string query = @"SET pg_trgm.similarity_threshold = 0.5;
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT album.albumid,
                                 album.artistid,
                                 album.title,
@@ -267,7 +267,7 @@ public class DeezerRepository
     
     public async Task<List<DeezerTrackModel>> SearchTrackByArtistIdAsync(string trackName, long artistId, int offset)
     {
-        string query = @"SET pg_trgm.similarity_threshold = 0.5;
+        string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT dt.TrackId, 
                                 dt.Readable, 
                                 dt.Title, 
