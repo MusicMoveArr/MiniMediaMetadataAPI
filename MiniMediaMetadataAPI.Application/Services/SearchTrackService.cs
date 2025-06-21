@@ -53,7 +53,7 @@ public class SearchTrackService
                 Album = new SearchTrackAlbumEntity
                 {
                     Id = track.Album.AlbumId,
-                    ArtistId = track.Album.ArtistId.ToString(),
+                    ArtistId = track.Album.ArtistId?.ToString(),
                     Name = track.Album.Name,
                     Type = track.Album.Type,
                     ReleaseDate = track.Album.ReleaseDate,

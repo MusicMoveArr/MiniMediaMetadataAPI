@@ -13,7 +13,7 @@ public class SpotifyAlbumModel
     public string Url { get; set; }
     public string Label { get; set; }
     public int Popularity { get; set; }
-    public string ArtistId { get; set; }
+    public string? ArtistId { get; set; }
     
     public List<SpotifyAlbumExternalIdModel> ExternalIds { get; set; }
     public List<SpotifyAlbumImageModel>? Images { get; set; }
