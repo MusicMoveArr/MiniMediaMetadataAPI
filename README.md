@@ -35,7 +35,7 @@ services:
         limits:
           memory: 256M
     hostname: MiniMediaMetadataAPI
-    image: musicmovearr/minimediametadataapi:main
+    image: musicmovearr/minimediametadataapi:latest
     ports:
       - target: 8080
         published: "56232"
@@ -56,7 +56,7 @@ docker run -d \
   -p 56232:8080 \
   --restart unless-stopped \
   -v /DATA/AppData/minimediametadataapi/config/appsettings.json:/app/appsettings.json \
-  musicmovearr/minimediametadataapi:main
+  musicmovearr/minimediametadataapi:latest
 ```
 
 ## Example Configuration
