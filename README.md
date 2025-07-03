@@ -75,6 +75,9 @@ Change the connectionstring to your own postgres database
   "AllowedHosts": "*",
   "DatabaseConfiguration":{
     "ConnectionString": "Host=192.168.1.1;Username=postgres;Password=postgres;Database=minimedia;Pooling=true;MinPoolSize=5;MaxPoolSize=100;"
+  },
+  "Prometheus": {
+    "MetricsUrl": "/metrics"
   }
 }
 ```
