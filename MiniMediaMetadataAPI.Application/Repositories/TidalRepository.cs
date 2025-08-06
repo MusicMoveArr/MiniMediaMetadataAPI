@@ -23,33 +23,48 @@ public class TidalRepository
                          where lower(ta.name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
-        
-        var results = await conn
-            .QueryAsync<TidalArtistModel, TidalArtistImageModel, TidalArtistModel>(query,
-                (artist, imageModel) =>
-                {
-                    if (artist.Images == null)
-                    {
-                        artist.Images = new List<TidalArtistImageModel>();
-                    }
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<TidalArtistModel>? results = null;
 
-                    if (imageModel != null)
+        try
+        {
+            results = await conn
+                .QueryAsync<TidalArtistModel, TidalArtistImageModel, TidalArtistModel>(query,
+                    (artist, imageModel) =>
                     {
-                        artist.Images.Add(imageModel);
-                    }
+                        if (artist.Images == null)
+                        {
+                            artist.Images = new List<TidalArtistImageModel>();
+                        }
 
-                    return artist;
-                },
-                splitOn: "artistid",
-                param: new
-                {
-                    name,
-                    offset
-                });
+                        if (imageModel != null)
+                        {
+                            artist.Images.Add(imageModel);
+                        }
+
+                        return artist;
+                    },
+                    splitOn: "artistid",
+                    param: new
+                    {
+                        name,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(artist => artist.ArtistId)
-            .Select(group =>
+            ?.GroupBy(artist => artist.ArtistId)
+            ?.Select(group =>
             {
                 var artist = group.First();
                 artist.Images = group.SelectMany(image => image.Images).ToList();
@@ -105,44 +120,63 @@ public class TidalRepository
                              and lower(album.title) % lower(@albumName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
-
-        var results = await conn
-            .QueryAsync<TidalAlbumModel, TidalArtistModel, TidalAlbumImageModel?, TidalAlbumExternalLinkModel?, TidalAlbumModel>(query,
-                (album, artist, imageModel, externalId) =>
-                {
-                    if (album.Images == null)
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<TidalAlbumModel>? results = null;
+        
+        try
+        {
+            results = await conn
+                .QueryAsync<TidalAlbumModel, 
+                    TidalArtistModel, 
+                    TidalAlbumImageModel?, 
+                    TidalAlbumExternalLinkModel?, 
+                    TidalAlbumModel>(query,
+                    (album, artist, imageModel, externalId) =>
                     {
-                        album.Images = new List<TidalAlbumImageModel>();
-                    }
-                    if (album.ExternalLinks == null)
-                    {
-                        album.ExternalLinks = new List<TidalAlbumExternalLinkModel>();
-                    }
+                        if (album.Images == null)
+                        {
+                            album.Images = new List<TidalAlbumImageModel>();
+                        }
+                        if (album.ExternalLinks == null)
+                        {
+                            album.ExternalLinks = new List<TidalAlbumExternalLinkModel>();
+                        }
 
-                    album.Artist = artist;
+                        album.Artist = artist;
                     
-                    if (imageModel != null)
-                    {
-                        album.Images.Add(imageModel);
-                    }
+                        if (imageModel != null)
+                        {
+                            album.Images.Add(imageModel);
+                        }
 
-                    if (externalId != null)
+                        if (externalId != null)
+                        {
+                            album.ExternalLinks.Add(externalId);
+                        }
+                        return album;
+                    },
+                    splitOn: "albumid,artistid,albumid,albumid",
+                    param: new
                     {
-                        album.ExternalLinks.Add(externalId);
-                    }
-                    return album;
-                },
-                splitOn: "albumid,artistid,albumid,albumid",
-                param: new
-                {
-                    albumName,
-                    artistId,
-                    offset
-                });
+                        albumName,
+                        artistId,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(album => album.AlbumId)
-            .Select(group =>
+            ?.GroupBy(album => album.AlbumId)
+            ?.Select(group =>
             {
                 var album = group.First();
                 
@@ -287,14 +321,19 @@ public class TidalRepository
                          where lower(tt.Title || ' ' || tt.version) % lower(@trackName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<TidalTrackModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<TidalTrackModel, 
-                        TidalTrackExternalLinkModel, 
-                        TidalAlbumModel, 
-                        TidalAlbumExternalLinkModel, 
-                        TidalTrackArtistModel, 
-                        TidalTrackModel>(query,
+        try
+        {
+            results = await conn
+                .QueryAsync<TidalTrackModel, 
+                            TidalTrackExternalLinkModel, 
+                            TidalAlbumModel, 
+                            TidalAlbumExternalLinkModel, 
+                            TidalTrackArtistModel, 
+                            TidalTrackModel>(query,
                 (track, trackExternalId, album, albumExternalId, trackArtist) =>
                 {
                     if (track.ExternalLinks == null)
@@ -341,11 +380,21 @@ public class TidalRepository
                     trackName,
                     artistId,
                     offset
-                });
+                },
+                transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(track => track.TrackId)
-            .Select(group =>
+            ?.GroupBy(track => track.TrackId)
+            ?.Select(group =>
             {
                 var track = group.First();
                 

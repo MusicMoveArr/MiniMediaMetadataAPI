@@ -22,15 +22,31 @@ public class MusicBrainzRepository
                          where lower(name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        var artists = new List<MusicBrainzArtistModel>();
         
-        return (await conn
-                .QueryAsync<MusicBrainzArtistModel>(query,
-                    param: new
-                    {
-                        name,
-                        offset
-                    }))
-            .ToList();
+        try
+        {
+            artists = (await conn
+                    .QueryAsync<MusicBrainzArtistModel>(query,
+                        param: new
+                        {
+                            name,
+                            offset
+                        }, transaction))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+
+        return artists;
     }
     
     public async Task<MusicBrainzArtistModel?> GetArtistByIdAsync(Guid id)
@@ -63,34 +79,49 @@ public class MusicBrainzRepository
                              and lower(release.title) % lower(@albumName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<MusicBrainzReleaseModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<MusicBrainzReleaseModel, MusicBrainzLabelModel?, MusicBrainzReleaseModel>(query,
-                (release, label) =>
-                {
-                    if (release.Labels == null)
+        try
+        {
+            results = await conn
+                .QueryAsync<MusicBrainzReleaseModel, MusicBrainzLabelModel?, MusicBrainzReleaseModel>(query,
+                    (release, label) =>
                     {
-                        release.Labels = new List<MusicBrainzLabelModel>();
-                    }
+                        if (release.Labels == null)
+                        {
+                            release.Labels = new List<MusicBrainzLabelModel>();
+                        }
 
-                    if (label != null)
-                    {
-                        release.Labels.Add(label);
-                    }
+                        if (label != null)
+                        {
+                            release.Labels.Add(label);
+                        }
                     
-                    return release;
-                },
-                splitOn: "ReleaseId,LabelId",
-                param: new
-                {
-                    albumName,
-                    artistId,
-                    offset
-                });
+                        return release;
+                    },
+                    splitOn: "ReleaseId,LabelId",
+                    param: new
+                    {
+                        albumName,
+                        artistId,
+                        offset
+                    }, 
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(album => album.ReleaseId)
-            .Select(group =>
+            ?.GroupBy(album => album.ReleaseId)
+            ?.Select(group =>
             {
                 var album = group.First();
                 
@@ -220,48 +251,63 @@ public class MusicBrainzRepository
                          where lower(track.Title) % lower(@trackName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<MusicBrainzArtistModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<MusicBrainzReleaseTrackModel, 
-                        MusicBrainzReleaseModel, 
-                        MusicBrainzArtistModel, 
-                        MusicBrainzLabelModel,
-                        MusicBrainzArtistModel,
-                        MusicBrainzArtistModel>(query,
-                (track, release, trackArtist, label, releaseArtist) =>
-                {
-                    if (label != null)
+        try
+        {
+            results = await conn
+                .QueryAsync<MusicBrainzReleaseTrackModel, 
+                    MusicBrainzReleaseModel, 
+                    MusicBrainzArtistModel, 
+                    MusicBrainzLabelModel,
+                    MusicBrainzArtistModel,
+                    MusicBrainzArtistModel>(query,
+                    (track, release, trackArtist, label, releaseArtist) =>
                     {
-                        release.Labels.Add(label);
-                    }
-
-                    if (track != null)
-                    {
-                        track.ReleaseId = release.ReleaseId;
-                        if (trackArtist != null)
+                        if (label != null)
                         {
-                            track.TrackArtists.Add(trackArtist);
+                            release.Labels.Add(label);
                         }
-                        release.Tracks.Add(track);
-                    }
 
-                    if (release != null)
+                        if (track != null)
+                        {
+                            track.ReleaseId = release.ReleaseId;
+                            if (trackArtist != null)
+                            {
+                                track.TrackArtists.Add(trackArtist);
+                            }
+                            release.Tracks.Add(track);
+                        }
+
+                        if (release != null)
+                        {
+                            releaseArtist.Releases.Add(release);
+                        }
+                        return releaseArtist;
+                    },
+                    splitOn: "ReleaseTrackId,ReleaseId,ArtistId,LabelId,ArtistId",
+                    param: new
                     {
-                        releaseArtist.Releases.Add(release);
-                    }
-                    return releaseArtist;
-                },
-                splitOn: "ReleaseTrackId,ReleaseId,ArtistId,LabelId,ArtistId",
-                param: new
-                {
-                    trackName,
-                    artistId,
-                    offset
-                });
+                        trackName,
+                        artistId,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(artist => artist.ArtistId)
-            .Select(group =>
+            ?.GroupBy(artist => artist.ArtistId)
+            ?.Select(group =>
             {
                 var artist = group.First();
                 

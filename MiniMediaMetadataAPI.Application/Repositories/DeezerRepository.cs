@@ -23,33 +23,47 @@ public class DeezerRepository
                          where lower(da.name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
-        
-        var results = await conn
-            .QueryAsync<DeezerArtistModel, DeezerArtistImageLinkModel, DeezerArtistModel>(query,
-                (artist, imageModel) =>
-                {
-                    if (artist.Images == null)
-                    {
-                        artist.Images = new List<DeezerArtistImageLinkModel>();
-                    }
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<DeezerArtistModel>? results = null;
 
-                    if (imageModel != null)
+        try
+        {
+            results = await conn
+                .QueryAsync<DeezerArtistModel, DeezerArtistImageLinkModel, DeezerArtistModel>(query,
+                    (artist, imageModel) =>
                     {
-                        artist.Images.Add(imageModel);
-                    }
+                        if (artist.Images == null)
+                        {
+                            artist.Images = new List<DeezerArtistImageLinkModel>();
+                        }
 
-                    return artist;
-                },
-                splitOn: "artistid",
-                param: new
-                {
-                    name,
-                    offset
-                });
+                        if (imageModel != null)
+                        {
+                            artist.Images.Add(imageModel);
+                        }
+
+                        return artist;
+                    },
+                    splitOn: "artistid",
+                    param: new
+                    {
+                        name,
+                        offset
+                    });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(artist => artist.ArtistId)
-            .Select(group =>
+            ?.GroupBy(artist => artist.ArtistId)
+            ?.Select(group =>
             {
                 var artist = group.First();
                 artist.Images = group.SelectMany(image => image.Images).ToList();
@@ -139,34 +153,49 @@ public class DeezerRepository
                              and lower(album.title) % lower(@albumName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<DeezerAlbumModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<DeezerAlbumModel, DeezerArtistModel, DeezerAlbumImageLinkModel?, DeezerAlbumArtistModel?, DeezerAlbumModel>(query,
-                (album, artist, imageModel, albumArtist) =>
-                {
-                    album.Artist = artist;
+        try
+        {
+            results = await conn
+                .QueryAsync<DeezerAlbumModel, DeezerArtistModel, DeezerAlbumImageLinkModel?, DeezerAlbumArtistModel?, DeezerAlbumModel>(query,
+                    (album, artist, imageModel, albumArtist) =>
+                    {
+                        album.Artist = artist;
                     
-                    if (imageModel != null)
+                        if (imageModel != null)
+                        {
+                            album.Images.Add(imageModel);
+                        }
+                        if (albumArtist != null)
+                        {
+                            album.Artists.Add(albumArtist);
+                        }
+                        return album;
+                    },
+                    splitOn: "albumid,artistid,albumid,albumid",
+                    param: new
                     {
-                        album.Images.Add(imageModel);
-                    }
-                    if (albumArtist != null)
-                    {
-                        album.Artists.Add(albumArtist);
-                    }
-                    return album;
-                },
-                splitOn: "albumid,artistid,albumid,albumid",
-                param: new
-                {
-                    albumName,
-                    artistId,
-                    offset
-                });
+                        albumName,
+                        artistId,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(album => album.AlbumId)
-            .Select(group =>
+            ?.GroupBy(album => album.AlbumId)
+            ?.Select(group =>
             {
                 var album = group.First();
                 
@@ -316,38 +345,53 @@ public class DeezerRepository
                          where lower(dt.Title) % lower(@trackName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<DeezerTrackModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<DeezerTrackModel, 
-                        DeezerAlbumModel, 
-                        DeezerTrackArtistModel, 
-                        DeezerTrackModel>(query,
-                (track, album, trackArtist) =>
-                {
-                    if (track.Artists == null)
+        try
+        {
+            results = await conn
+                .QueryAsync<DeezerTrackModel, 
+                    DeezerAlbumModel, 
+                    DeezerTrackArtistModel, 
+                    DeezerTrackModel>(query,
+                    (track, album, trackArtist) =>
                     {
-                        track.Artists = new List<DeezerTrackArtistModel>();
-                    }
+                        if (track.Artists == null)
+                        {
+                            track.Artists = new List<DeezerTrackArtistModel>();
+                        }
                     
-                    track.Album = album;
+                        track.Album = album;
 
-                    if (trackArtist != null)
+                        if (trackArtist != null)
+                        {
+                            track.Artists.Add(trackArtist);
+                        }
+                        return track;
+                    },
+                    splitOn: "trackid,albumid,ArtistId",
+                    param: new
                     {
-                        track.Artists.Add(trackArtist);
-                    }
-                    return track;
-                },
-                splitOn: "trackid,albumid,ArtistId",
-                param: new
-                {
-                    trackName,
-                    artistId,
-                    offset
-                });
+                        trackName,
+                        artistId,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(track => track.TrackId)
-            .Select(group =>
+            ?.GroupBy(track => track.TrackId)
+            ?.Select(group =>
             {
                 var track = group.First();
                 

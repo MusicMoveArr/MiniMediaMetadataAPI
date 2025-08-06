@@ -23,32 +23,48 @@ public class SpotifyRepository
                          where lower(sa.name) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<SpotifyArtistModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<SpotifyArtistModel, SpotifyArtistImageModel, SpotifyArtistModel>(query,
-                (artist, imageModel) =>
-                {
-                    if (artist.Images == null)
+        try
+        {
+            results = await conn
+                .QueryAsync<SpotifyArtistModel, SpotifyArtistImageModel, SpotifyArtistModel>(query,
+                    (artist, imageModel) =>
                     {
-                        artist.Images = new List<SpotifyArtistImageModel>();
-                    }
+                        if (artist.Images == null)
+                        {
+                            artist.Images = new List<SpotifyArtistImageModel>();
+                        }
 
-                    if (imageModel != null)
+                        if (imageModel != null)
+                        {
+                            artist.Images.Add(imageModel);
+                        }
+
+                        return artist;
+                    },
+                    splitOn: "artistid",
+                    param: new
                     {
-                        artist.Images.Add(imageModel);
-                    }
-                    return artist;
-                },
-                splitOn: "artistid",
-                param: new
-                {
-                    name,
-                    offset
-                });
-
+                        name,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+        
         var groupedResult = results
-            .GroupBy(artist => artist.Id)
-            .Select(group =>
+            ?.GroupBy(artist => artist.Id)
+            ?.Select(group =>
             {
                 var artist = group.First();
                 artist.Images = group
@@ -126,49 +142,68 @@ public class SpotifyRepository
                              or sa.artistId = @artistId)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<SpotifyAlbumModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<SpotifyAlbumModel, SpotifyAlbumArtistModel, SpotifyAlbumImageModel, SpotifyAlbumExternalIdModel, SpotifyAlbumModel>(query,
-                (album, artist, imageModel, externalId) =>
-                {
-                    if (album.Images == null)
+        try
+        {
+            results = await conn
+                .QueryAsync<SpotifyAlbumModel, 
+                    SpotifyAlbumArtistModel, 
+                    SpotifyAlbumImageModel, 
+                    SpotifyAlbumExternalIdModel, 
+                    SpotifyAlbumModel>(query,
+                    (album, artist, imageModel, externalId) =>
                     {
-                        album.Images = new List<SpotifyAlbumImageModel>();
-                    }
-                    if (album.Artists == null)
-                    {
-                        album.Artists = new List<SpotifyAlbumArtistModel>();
-                    }
-                    if (album.ExternalIds == null)
-                    {
-                        album.ExternalIds = new List<SpotifyAlbumExternalIdModel>();
-                    }
+                        if (album.Images == null)
+                        {
+                            album.Images = new List<SpotifyAlbumImageModel>();
+                        }
+                        if (album.Artists == null)
+                        {
+                            album.Artists = new List<SpotifyAlbumArtistModel>();
+                        }
+                        if (album.ExternalIds == null)
+                        {
+                            album.ExternalIds = new List<SpotifyAlbumExternalIdModel>();
+                        }
 
-                    if (imageModel != null)
+                        if (imageModel != null)
+                        {
+                            album.Images.Add(imageModel);
+                        }
+                        if (artist != null)
+                        {
+                            album.Artists.Add(artist);
+                        }
+                        if (externalId != null)
+                        {
+                            album.ExternalIds.Add(externalId);
+                        }
+                        return album;
+                    },
+                    splitOn: "albumid,albumid,albumid",
+                    param: new
                     {
-                        album.Images.Add(imageModel);
-                    }
-                    if (artist != null)
-                    {
-                        album.Artists.Add(artist);
-                    }
-                    if (externalId != null)
-                    {
-                        album.ExternalIds.Add(externalId);
-                    }
-                    return album;
-                },
-                splitOn: "albumid,albumid,albumid",
-                param: new
-                {
-                    albumName,
-                    artistId,
-                    offset
-                });
+                        albumName,
+                        artistId,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(album => album.AlbumId)
-            .Select(group =>
+            ?.GroupBy(album => album.AlbumId)
+            ?.Select(group =>
             {
                 var album = group.First();
                 
@@ -310,57 +345,72 @@ public class SpotifyRepository
                              or album.artistid = @artistId)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<SpotifyTrackModel>? results = null;
 
-        var results = await conn
-            .QueryAsync<SpotifyTrackModel, 
-                        SpotifyTrackExternalIdModel, 
-                        SpotifyAlbumModel, 
-                        SpotifyAlbumExternalIdModel, 
-                        SpotifyTrackArtistModel, 
-                        SpotifyTrackModel>(query,
-                (track, trackExternalId, album, albumExternalId, trackArtist) =>
-                {
-                    if (track.ExternalIds == null)
+        try
+        {
+            results = await conn
+                .QueryAsync<SpotifyTrackModel, 
+                    SpotifyTrackExternalIdModel, 
+                    SpotifyAlbumModel, 
+                    SpotifyAlbumExternalIdModel, 
+                    SpotifyTrackArtistModel, 
+                    SpotifyTrackModel>(query,
+                    (track, trackExternalId, album, albumExternalId, trackArtist) =>
                     {
-                        track.ExternalIds = new List<SpotifyTrackExternalIdModel>();
-                    }
-                    if (track.Artists == null)
-                    {
-                        track.Artists = new List<SpotifyTrackArtistModel>();
-                    }
+                        if (track.ExternalIds == null)
+                        {
+                            track.ExternalIds = new List<SpotifyTrackExternalIdModel>();
+                        }
+                        if (track.Artists == null)
+                        {
+                            track.Artists = new List<SpotifyTrackArtistModel>();
+                        }
                     
-                    track.Album = album;
+                        track.Album = album;
 
-                    if (track.Album != null)
-                    {
-                        track.Album.ExternalIds = new List<SpotifyAlbumExternalIdModel>();
-                    }
+                        if (track.Album != null)
+                        {
+                            track.Album.ExternalIds = new List<SpotifyAlbumExternalIdModel>();
+                        }
 
-                    if (track.Album.ExternalIds != null && albumExternalId != null)
+                        if (track.Album.ExternalIds != null && albumExternalId != null)
+                        {
+                            track.Album.ExternalIds.Add(albumExternalId);
+                        }
+                        if (trackExternalId != null)
+                        {
+                            track.ExternalIds.Add(trackExternalId);
+                        }
+                        if (trackArtist != null)
+                        {
+                            track.Artists.Add(trackArtist);
+                        }
+                        return track;
+                    },
+                    splitOn: "trackid,trackid,albumid,albumid,ArtistId",
+                    param: new
                     {
-                        track.Album.ExternalIds.Add(albumExternalId);
-                    }
-                    if (trackExternalId != null)
-                    {
-                        track.ExternalIds.Add(trackExternalId);
-                    }
-                    if (trackArtist != null)
-                    {
-                        track.Artists.Add(trackArtist);
-                    }
-                    return track;
-                },
-                splitOn: "trackid,trackid,albumid,albumid,ArtistId",
-                param: new
-                {
-                    trackName,
-                    artistId,
-                    offset
-                });
+                        trackName,
+                        artistId,
+                        offset
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
 
         var groupedResult = results
-            .GroupBy(track => track.TrackId)
-            .Select(group =>
+            ?.GroupBy(track => track.TrackId)
+            ?.Select(group =>
             {
                 var track = group.First();
                 
