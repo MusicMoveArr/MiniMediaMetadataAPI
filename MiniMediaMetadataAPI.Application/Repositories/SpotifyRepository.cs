@@ -55,7 +55,7 @@ public class SpotifyRepository
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+            Console.WriteLine($"Parameters, name='{name}', offset='{offset}', Error={ex.Message}\r\nStackTrace={ex.StackTrace}");
         }
         finally
         {
@@ -194,7 +194,7 @@ public class SpotifyRepository
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+            Console.WriteLine($"Parameters, albumName='{albumName}', artistId='{artistId}', offset='{offset}', Error={ex.Message}\r\nStackTrace={ex.StackTrace}");
         }
         finally
         {
@@ -401,7 +401,7 @@ public class SpotifyRepository
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message + "\r\n" + ex.StackTrace);
+            Console.WriteLine($"Parameters, trackName='{trackName}', artistId='{artistId}', offset='{offset}', Error={ex.Message}\r\nStackTrace={ex.StackTrace}");
         }
         finally
         {
