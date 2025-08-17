@@ -14,7 +14,7 @@ public class TidalRepository
         _databaseConfiguration = databaseConfiguration.Value;
     }
     
-    public async Task<List<TidalArtistModel>> SearchArtistAsync(string name, int offset)
+    public async Task<List<TidalArtistModel>?> SearchArtistAsync(string name, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT * 
@@ -92,7 +92,7 @@ public class TidalRepository
                 });
     }
     
-    public async Task<List<TidalAlbumModel>> SearchAlbumByArtistIdAsync(string albumName, int artistId, int offset)
+    public async Task<List<TidalAlbumModel>?> SearchAlbumByArtistIdAsync(string albumName, int artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT album.albumid,
@@ -277,7 +277,7 @@ public class TidalRepository
         return groupedResult.FirstOrDefault();
     }
     
-    public async Task<List<TidalTrackModel>> SearchTrackByArtistIdAsync(string trackName, int artistId, int offset)
+    public async Task<List<TidalTrackModel>?> SearchTrackByArtistIdAsync(string trackName, int artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT tt.TrackId, 

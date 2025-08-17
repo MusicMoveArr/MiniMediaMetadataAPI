@@ -14,7 +14,7 @@ public class SpotifyRepository
         _databaseConfiguration = databaseConfiguration.Value;
     }
     
-    public async Task<List<SpotifyArtistModel>> SearchArtistAsync(string name, int offset)
+    public async Task<List<SpotifyArtistModel>?> SearchArtistAsync(string name, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT * 
@@ -122,7 +122,7 @@ public class SpotifyRepository
     }
     
     
-    public async Task<List<SpotifyAlbumModel>> SearchAlbumByArtistIdAsync(string albumName, string artistId, int offset)
+    public async Task<List<SpotifyAlbumModel>?> SearchAlbumByArtistIdAsync(string albumName, string artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT sa.*,
@@ -309,7 +309,7 @@ public class SpotifyRepository
         return groupedResult.FirstOrDefault();
     }
     
-    public async Task<List<SpotifyTrackModel>> SearchTrackByArtistIdAsync(string trackName, string artistId, int offset)
+    public async Task<List<SpotifyTrackModel>?> SearchTrackByArtistIdAsync(string trackName, string artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT st.TrackId, 

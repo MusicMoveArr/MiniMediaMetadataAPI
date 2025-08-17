@@ -37,7 +37,7 @@ public class SearchTrackService
         if (provider is ProviderType.Any or ProviderType.Spotify)
         {
             var spotifyArtists = await _spotifyRepository.SearchTrackByArtistIdAsync(trackName, artistId, offset);
-            searchResult.AddRange(spotifyArtists.Select(track => new SearchTrackEntity
+            searchResult.AddRange(spotifyArtists?.Select(track => new SearchTrackEntity
             {
                 ProviderType = ProviderType.Spotify,
                 Id = track.TrackId,
@@ -69,12 +69,12 @@ public class SearchTrackService
                     Id = artist.ArtistId,
                     Name = artist.ArtistName
                 }).ToList()
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.Tidal && int.TryParse(artistId, out int intArtistId))
         {
             var tidalTracks = await _tidalRepository.SearchTrackByArtistIdAsync(trackName, intArtistId, offset);
-            searchResult.AddRange(tidalTracks.Select(track => new SearchTrackEntity
+            searchResult.AddRange(tidalTracks?.Select(track => new SearchTrackEntity
             {
                 ProviderType = ProviderType.Tidal,
                 Id = track.TrackId.ToString(),
@@ -106,13 +106,13 @@ public class SearchTrackService
                     Id = artist.ArtistId.ToString(),
                     Name = artist.ArtistName
                 }).ToList()
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.MusicBrainz && Guid.TryParse(artistId, out Guid guidArtistId))
         {
             var musicBrainzArtists = await _musicBrainzRepository.SearchTrackByArtistIdAsync(trackName, guidArtistId, offset);
 
-            foreach (var artist in musicBrainzArtists)
+            foreach (var artist in musicBrainzArtists ?? [])
             {
                 foreach (var release in artist.Releases)
                 {
@@ -169,7 +169,7 @@ public class SearchTrackService
         if (provider is ProviderType.Any or ProviderType.Deezer && long.TryParse(artistId, out long longArtistId))
         {
             var deezerTracks = await _deezerRepository.SearchTrackByArtistIdAsync(trackName, longArtistId, offset);
-            searchResult.AddRange(deezerTracks.Select(track => new SearchTrackEntity
+            searchResult.AddRange(deezerTracks?.Select(track => new SearchTrackEntity
             {
                 ProviderType = ProviderType.Deezer,
                 Id = track.TrackId.ToString(),
@@ -202,7 +202,7 @@ public class SearchTrackService
                     Id = artist.ArtistId.ToString(),
                     Name = artist.ArtistName
                 }).ToList()
-            }));
+            }) ?? []);
         }
 
         response.SearchResult = searchResult.Any() ? SearchResultType.Ok : SearchResultType.NotFound;

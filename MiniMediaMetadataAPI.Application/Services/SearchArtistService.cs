@@ -36,7 +36,7 @@ public class SearchArtistService
         if (provider is ProviderType.Any or ProviderType.Spotify)
         {
             var spotifyArtists = await _spotifyRepository.SearchArtistAsync(name, offset);
-            searchResult.AddRange(spotifyArtists.Select(artist => new SearchArtistEntity
+            searchResult.AddRange(spotifyArtists?.Select(artist => new SearchArtistEntity
             {
                 ProviderType = ProviderType.Spotify,
                 Id = artist.Id,
@@ -52,12 +52,12 @@ public class SearchArtistService
                     Height = image.Height,
                     Url = image.Url
                 }).ToList()
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.Tidal)
         {
             var tidalArtists = await _tidalRepository.SearchArtistAsync(name, offset);
-            searchResult.AddRange(tidalArtists.Select(artist => new SearchArtistEntity
+            searchResult.AddRange(tidalArtists?.Select(artist => new SearchArtistEntity
             {
                 ProviderType = ProviderType.Tidal,
                 Id = artist.ArtistId.ToString(),
@@ -73,12 +73,12 @@ public class SearchArtistService
                     Height = image.Meta_Height,
                     Url = image.Href
                 }).ToList()
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.MusicBrainz)
         {
             var musicBrainzArtists = await _musicBrainzRepository.SearchArtistAsync(name, offset);
-            searchResult.AddRange(musicBrainzArtists.Select(artist => new SearchArtistEntity
+            searchResult.AddRange(musicBrainzArtists?.Select(artist => new SearchArtistEntity
             {
                 ProviderType = ProviderType.MusicBrainz,
                 Id = artist.ArtistId.ToString(),
@@ -88,12 +88,12 @@ public class SearchArtistService
                 TotalFollowers = 0,
                 Genres = string.Empty,
                 LastSyncTime = artist.LastSyncTime
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.Deezer)
         {
             var deezerArtists = await _deezerRepository.SearchArtistAsync(name, offset);
-            searchResult.AddRange(deezerArtists.Select(artist => new SearchArtistEntity
+            searchResult.AddRange(deezerArtists?.Select(artist => new SearchArtistEntity
             {
                 ProviderType = ProviderType.Deezer,
                 Id = artist.ArtistId.ToString(),
@@ -109,7 +109,7 @@ public class SearchArtistService
                     Height = image.Height,
                     Url = image.Href
                 }).ToList()
-            }));
+            }) ?? []);
         }
 
         response.SearchResult = searchResult.Any() ? SearchResultType.Ok : SearchResultType.NotFound;

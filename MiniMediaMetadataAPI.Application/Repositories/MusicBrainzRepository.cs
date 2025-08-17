@@ -14,7 +14,7 @@ public class MusicBrainzRepository
         _databaseConfiguration = databaseConfiguration.Value;
     }
     
-    public async Task<List<MusicBrainzArtistModel>> SearchArtistAsync(string name, int offset)
+    public async Task<List<MusicBrainzArtistModel>?> SearchArtistAsync(string name, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT * 
@@ -66,7 +66,7 @@ public class MusicBrainzRepository
                 });
     }
     
-    public async Task<List<MusicBrainzReleaseModel>> SearchAlbumByArtistIdAsync(string albumName, Guid artistId, int offset)
+    public async Task<List<MusicBrainzReleaseModel>?> SearchAlbumByArtistIdAsync(string albumName, Guid artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT release.*,
@@ -186,7 +186,7 @@ public class MusicBrainzRepository
         return groupedResult;
     }
     
-    public async Task<List<MusicBrainzArtistModel>> SearchTrackByArtistIdAsync(string trackName, Guid artistId, int offset)
+    public async Task<List<MusicBrainzArtistModel>?> SearchTrackByArtistIdAsync(string trackName, Guid artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          select track.ReleaseTrackId,

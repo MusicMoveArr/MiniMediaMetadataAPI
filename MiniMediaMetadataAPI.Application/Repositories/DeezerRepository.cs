@@ -14,7 +14,7 @@ public class DeezerRepository
         _databaseConfiguration = databaseConfiguration.Value;
     }
     
-    public async Task<List<DeezerArtistModel>> SearchArtistAsync(string name, int offset)
+    public async Task<List<DeezerArtistModel>?> SearchArtistAsync(string name, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT *
@@ -119,7 +119,7 @@ public class DeezerRepository
         return groupedResult.FirstOrDefault();
     }
     
-    public async Task<List<DeezerAlbumModel>> SearchAlbumByArtistIdAsync(string albumName, long artistId, int offset)
+    public async Task<List<DeezerAlbumModel>?> SearchAlbumByArtistIdAsync(string albumName, long artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT album.albumid,
@@ -294,7 +294,7 @@ public class DeezerRepository
         return groupedResult.FirstOrDefault();
     }
     
-    public async Task<List<DeezerTrackModel>> SearchTrackByArtistIdAsync(string trackName, long artistId, int offset)
+    public async Task<List<DeezerTrackModel>?> SearchTrackByArtistIdAsync(string trackName, long artistId, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT dt.TrackId, 

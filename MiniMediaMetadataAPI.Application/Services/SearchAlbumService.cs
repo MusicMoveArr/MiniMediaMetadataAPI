@@ -36,7 +36,7 @@ public class SearchAlbumService
         if (provider is ProviderType.Any or ProviderType.Spotify)
         {
             var spotifyArtists = await _spotifyRepository.SearchAlbumByArtistIdAsync(name, artistId, offset);
-            searchResult.AddRange(spotifyArtists.Select(album => new SearchAlbumEntity
+            searchResult.AddRange(spotifyArtists?.Select(album => new SearchAlbumEntity
             {
                 ProviderType = ProviderType.Spotify,
                 Id = album.AlbumId,
@@ -59,12 +59,12 @@ public class SearchAlbumService
                     Id = artist.ArtistId,
                     Name = artist.ArtistName
                 }).ToList()
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.Tidal && int.TryParse(artistId, out int intArtistId))
         {
             var tidalAlbums = await _tidalRepository.SearchAlbumByArtistIdAsync(name, intArtistId, offset);
-            searchResult.AddRange(tidalAlbums.Select(album => new SearchAlbumEntity
+            searchResult.AddRange(tidalAlbums?.Select(album => new SearchAlbumEntity
             {
                 ProviderType = ProviderType.Tidal,
                 Id = album.AlbumId.ToString(),
@@ -83,12 +83,12 @@ public class SearchAlbumService
                     Height = image.Meta_Height,
                     Url = image.Href
                 }).ToList()
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.MusicBrainz && Guid.TryParse(artistId, out Guid guidArtistId))
         {
             var musicBrainzArtists = await _musicBrainzRepository.SearchAlbumByArtistIdAsync(name, guidArtistId, offset);
-            searchResult.AddRange(musicBrainzArtists.Select(album => new SearchAlbumEntity
+            searchResult.AddRange(musicBrainzArtists?.Select(album => new SearchAlbumEntity
             {
                 ProviderType = ProviderType.MusicBrainz,
                 Id = album.ReleaseId.ToString(),
@@ -99,12 +99,12 @@ public class SearchAlbumService
                 ReleaseDate = album.Date,
                 TotalTracks = album.TotalTracks,
                 UPC = album.Barcode
-            }));
+            }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.Deezer && long.TryParse(artistId, out long longArtistId))
         {
-            var deezerAlbums = await _deezerRepository.SearchAlbumByArtistIdAsync(name, longArtistId, offset);
-            searchResult.AddRange(deezerAlbums.Select(album => new SearchAlbumEntity
+            var deezerAlbums = await _deezerRepository?.SearchAlbumByArtistIdAsync(name, longArtistId, offset);
+            searchResult.AddRange(deezerAlbums?.Select(album => new SearchAlbumEntity
             {
                 ProviderType = ProviderType.Deezer,
                 Id = album.AlbumId.ToString(),
@@ -129,7 +129,7 @@ public class SearchAlbumService
                     Id = artist.ArtistId.ToString(),
                     Name = artist.ArtistName
                 }).ToList()
-            }));
+            }) ?? []);
         }
 
         response.SearchResult = searchResult.Any() ? SearchResultType.Ok : SearchResultType.NotFound;
