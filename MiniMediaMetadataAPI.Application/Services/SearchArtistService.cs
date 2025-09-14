@@ -12,17 +12,20 @@ public class SearchArtistService
     private readonly TidalRepository _tidalRepository;
     private readonly MusicBrainzRepository _musicBrainzRepository;
     private readonly DeezerRepository _deezerRepository;
+    private readonly DiscogsRepository _discogsRepository;
     
     public SearchArtistService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
         MusicBrainzRepository musicBrainzRepository,
-        DeezerRepository deezerRepository)
+        DeezerRepository deezerRepository,
+        DiscogsRepository discogsRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
         _deezerRepository = deezerRepository;
+        _discogsRepository = discogsRepository;
     }
 
     public async Task<SearchArtistResponse> SearchArtist(
@@ -109,6 +112,21 @@ public class SearchArtistService
                     Height = image.Height,
                     Url = image.Href
                 }).ToList()
+            }) ?? []);
+        }
+        if (provider is ProviderType.Any or ProviderType.Discogs)
+        {
+            var discogsArtists = await _discogsRepository.SearchArtistAsync(name, offset);
+            searchResult.AddRange(discogsArtists?.Select(artist => new SearchArtistEntity
+            {
+                ProviderType = ProviderType.Discogs,
+                Id = artist.ArtistId.ToString(),
+                Name = artist.Name,
+                Popularity = 0,
+                Url = $"https://www.discogs.com/artist/{artist.ArtistId}",
+                TotalFollowers = 0,
+                Genres = string.Empty,
+                //LastSyncTime = artist.LastSyncTime
             }) ?? []);
         }
 
@@ -216,6 +234,23 @@ public class SearchArtistService
                         Height = image.Height,
                         Url = image.Href
                     }).ToList()
+                });
+            }
+        }
+        if (provider is ProviderType.Discogs && int.TryParse(id, out int discogsArtistId))
+        {
+            var discogsArtist = await _discogsRepository.GetArtistByIdAsync(discogsArtistId);
+            if (discogsArtist != null)
+            {
+                searchResult.Add(new SearchArtistEntity
+                {
+                    ProviderType = ProviderType.Discogs,
+                    Id = discogsArtist.ArtistId.ToString(),
+                    Name = discogsArtist.Name,
+                    Popularity = 0,
+                    Url = $"https://www.discogs.com/artist/{discogsArtist.ArtistId}",
+                    TotalFollowers = 0,
+                    Genres = string.Empty
                 });
             }
         }

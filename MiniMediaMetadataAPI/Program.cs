@@ -23,6 +23,7 @@ builder.Services.AddScoped<MusicBrainzRepository>();
 builder.Services.AddScoped<SpotifyRepository>();
 builder.Services.AddScoped<TidalRepository>();
 builder.Services.AddScoped<DeezerRepository>();
+builder.Services.AddScoped<DiscogsRepository>();
 builder.Services.AddScoped<SearchArtistService>();
 builder.Services.AddScoped<SearchAlbumService>();
 builder.Services.AddScoped<SearchTrackService>();

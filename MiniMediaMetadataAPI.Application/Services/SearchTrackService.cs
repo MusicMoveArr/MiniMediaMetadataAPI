@@ -12,17 +12,20 @@ public class SearchTrackService
     private readonly TidalRepository _tidalRepository;
     private readonly MusicBrainzRepository _musicBrainzRepository;
     private readonly DeezerRepository _deezerRepository;
+    private readonly DiscogsRepository _discogsRepository;
     
     public SearchTrackService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
         MusicBrainzRepository musicBrainzRepository,
-        DeezerRepository deezerRepository)
+        DeezerRepository deezerRepository,
+        DiscogsRepository discogsRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
         _deezerRepository = deezerRepository;
+        _discogsRepository = discogsRepository;
     }
 
     public async Task<SearchTrackResponse> SearchTrack(
@@ -47,7 +50,7 @@ public class SearchTrackService
                 Duration = track.Duration,
                 Explicit = track.Explicit,
                 DiscNumber = track.DiscNumber,
-                TrackNumber = track.TrackNumber,
+                TrackNumber = track.TrackNumber.ToString(),
                 Label = string.Empty,
                 ISRC = track.ExternalIds?.FirstOrDefault(externalId => string.Equals(externalId.Name, "isrc"))?.Value,
                 Album = new SearchTrackAlbumEntity
@@ -84,7 +87,7 @@ public class SearchTrackService
                 Duration = track.Duration,
                 Explicit = track.Explicit,
                 DiscNumber = track.VolumeNumber,
-                TrackNumber = track.TrackNumber,
+                TrackNumber = track.TrackNumber.ToString(),
                 Label = string.Empty,
                 ISRC = track.ISRC,
                 Album = new SearchTrackAlbumEntity
@@ -126,7 +129,7 @@ public class SearchTrackService
                         Duration = TimeSpan.FromMilliseconds(track.Length),
                         Explicit = false,
                         DiscNumber = track.MediaPosition,
-                        TrackNumber = track.Position,
+                        TrackNumber = track.Position.ToString(),
                         Label = string.Join(";", release.Labels.Select(label => label.Name)),
                         ISRC = string.Empty,
                         Album = new SearchTrackAlbumEntity
@@ -179,7 +182,7 @@ public class SearchTrackService
                 Duration = TimeSpan.FromSeconds(track.Duration),
                 Explicit = track.ExplicitLyrics,
                 DiscNumber = track.DiskNumber,
-                TrackNumber = track.TrackPosition,
+                TrackNumber = track.TrackPosition.ToString(),
                 Label = track.Album.Label,
                 ISRC = track.ISRC,
                 
@@ -201,6 +204,43 @@ public class SearchTrackService
                 {
                     Id = artist.ArtistId.ToString(),
                     Name = artist.ArtistName
+                }).ToList()
+            }) ?? []);
+        }
+        if (provider is ProviderType.Any or ProviderType.Discogs && int.TryParse(artistId, out int discogsArtistId))
+        {
+            var discogsTracks = await _discogsRepository.SearchTrackByArtistIdAsync(trackName, discogsArtistId, offset);
+            searchResult.AddRange(discogsTracks?.Select(track => new SearchTrackEntity
+            {
+                ProviderType = ProviderType.Discogs,
+                Id = string.Empty,
+                Name = track.Title,
+                Popularity = 0,
+                Url = string.Empty,
+                Duration = !string.IsNullOrWhiteSpace(track.Duration) ? (TimeSpan.TryParseExact(track.Duration, ["m\\:ss", "h\\:mm\\:ss"], null, out var span) ? span : TimeSpan.Zero) : TimeSpan.Zero,
+                Explicit = track.Title?.Contains("(explicit") == true,
+                DiscNumber = track.Position.Contains("-") ? (int.TryParse(track.Position.Split('-')[0], out int disc) ? disc : 1) : 1,
+                TrackNumber = track.Position.Contains("-") ? (int.TryParse(track.Position.Split('-')[1], out int trackNumber) ? trackNumber.ToString() : track.Position) : track.Position,
+                Label = string.Empty,
+                ISRC = string.Empty,
+                Album = new SearchTrackAlbumEntity
+                {
+                    Id = track.Release.ReleaseId.ToString(),
+                    ArtistId = track.Release.Artists?.FirstOrDefault()?.ArtistId.ToString() ?? "0",
+                    Name = track.Release.Title,
+                    Type = string.Empty,
+                    ReleaseDate = track.Release.Released,
+                    TotalTracks = track.Release.TrackCount,
+                    Url = $"https://www.discogs.com/release/{track.Release.ReleaseId}",
+                    Label = string.Empty,
+                    Popularity = 0,
+                    UPC = string.Empty,
+                    ProviderType = ProviderType.Discogs
+                },
+                Artists = track.Release.Artists?.Select(artist => new SearchTrackArtistEntity
+                {
+                    Id = artist.ArtistId.ToString(),
+                    Name = artist.Name
                 }).ToList()
             }) ?? []);
         }

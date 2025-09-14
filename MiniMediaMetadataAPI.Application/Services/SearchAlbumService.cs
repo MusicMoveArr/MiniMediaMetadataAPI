@@ -11,17 +11,20 @@ public class SearchAlbumService
     private readonly TidalRepository _tidalRepository;
     private readonly MusicBrainzRepository _musicBrainzRepository;
     private readonly DeezerRepository _deezerRepository;
+    private readonly DiscogsRepository _discogsRepository;
     
     public SearchAlbumService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
         MusicBrainzRepository musicBrainzRepository,
-        DeezerRepository deezerRepository)
+        DeezerRepository deezerRepository,
+        DiscogsRepository discogsRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
         _deezerRepository = deezerRepository;
+        _discogsRepository = discogsRepository;
     }
 
     public async Task<SearchAlbumResponse> SearchAlbum(
@@ -128,6 +131,30 @@ public class SearchAlbumService
                 {
                     Id = artist.ArtistId.ToString(),
                     Name = artist.ArtistName
+                }).ToList()
+            }) ?? []);
+        }
+        if (provider is ProviderType.Any or ProviderType.Discogs && int.TryParse(artistId, out int discogsArtistId))
+        {
+            var discogsAlbums = await _discogsRepository?.SearchAlbumByArtistIdAsync(name, discogsArtistId, offset);
+            searchResult.AddRange(discogsAlbums?.Select(album => new SearchAlbumEntity
+            {
+                ProviderType = ProviderType.Discogs,
+                Id = album.ReleaseId.ToString(),
+                Name = album.Title,
+                Popularity = 0,
+                Url = $"https://www.discogs.com/release/{album.ReleaseId}",
+                UPC = string.Empty,
+                Copyright = string.Empty,
+                Label = string.Empty,
+                ReleaseDate = album.Released,
+                TotalTracks = album.TrackCount,
+                Type = string.Empty,
+                ArtistId = album.Artists?.FirstOrDefault()?.ArtistId.ToString() ?? "0",
+                Artists = album.Artists?.Select(artist => new SearchAlbumArtistEntity
+                {
+                    Id = artist.ArtistId.ToString(),
+                    Name = artist.Name
                 }).ToList()
             }) ?? []);
         }
@@ -255,6 +282,29 @@ public class SearchAlbumService
                     Width = image.Width,
                     Height = image.Height,
                     Url = image.Href
+                }).ToList()
+            });
+        }
+        if (provider is ProviderType.Discogs && int.TryParse(id, out int discogsAlbumId))
+        {
+            var discogsAlbum = await _discogsRepository.GetAlbumIdAsync(discogsAlbumId);
+            searchResult.Add(new SearchAlbumEntity
+            {
+                ProviderType = ProviderType.Discogs,
+                Id = discogsAlbum.ReleaseId.ToString(),
+                ArtistId = discogsAlbum.Artists?.FirstOrDefault()?.ArtistId.ToString() ?? "0",
+                Name = discogsAlbum.Title,
+                Popularity = 0,
+                Url = $"https://www.discogs.com/release/{discogsAlbum.ReleaseId}",
+                UPC = string.Empty,
+                Copyright = string.Empty,
+                Label = string.Empty,
+                ReleaseDate = discogsAlbum.Released,
+                TotalTracks = discogsAlbum.TrackCount,
+                Artists = discogsAlbum.Artists?.Select(artist => new SearchAlbumArtistEntity
+                {
+                    Id = artist.ArtistId.ToString(),
+                    Name = artist.Name
                 }).ToList()
             });
         }
