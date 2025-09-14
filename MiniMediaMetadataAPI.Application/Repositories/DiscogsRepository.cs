@@ -17,7 +17,7 @@ public class DiscogsRepository
     public async Task<List<DiscogsArtist>?> SearchArtistAsync(string name, int offset)
     {
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
-                         SELECT *
+                         SELECT da.artistid, regexp_replace(da.name, ' \([0-9]*\)$', '' ) as name, da.realname, da.profile, da.dataquality, da.lastsynctime
                          FROM discogs_artist da
                          where lower(da.name) % lower(@name)";
 
@@ -50,7 +50,7 @@ public class DiscogsRepository
     
     public async Task<DiscogsArtist?> GetArtistByIdAsync(long id)
     {
-        string query = @"SELECT *
+        string query = @"SELECT da.artistid, regexp_replace(da.name, ' \([0-9]*\)$', '' ) as name, da.realname, da.profile, da.dataquality, da.lastsynctime
                          FROM discogs_artist da
                          where da.artistid = @id
                          limit 1";
@@ -80,7 +80,7 @@ public class DiscogsRepository
                                 album.masterid,
                                 track.TrackCount,
                                 dra.*,
-                                da.name AS Name
+                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) AS Name
                          FROM discogs_release album
                          join discogs_release_artist dra on dra.releaseid = album.releaseid and dra.artistid = @artistId
                          join discogs_artist da on da.artistid = dra.artistid
@@ -158,7 +158,7 @@ public class DiscogsRepository
                                 album.masterid,
                                 track.TrackCount,
                                 dra.*,
-                                da.name AS Name
+                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) AS Name
                          FROM discogs_release album
                          join discogs_release_artist dra on dra.releaseid = album.releaseid
                          join discogs_artist da on da.artistid = dra.artistid
@@ -221,7 +221,7 @@ public class DiscogsRepository
                                 album.masterid,
                                 track.TrackCount,
                                 dra.*,
-                                da.name as Name
+                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) as Name
                          FROM discogs_release_track dt
                          join discogs_release album on album.ReleaseId = dt.ReleaseId
                          join lateral (
