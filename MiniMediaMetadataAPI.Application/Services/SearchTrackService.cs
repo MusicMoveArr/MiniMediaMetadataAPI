@@ -222,7 +222,10 @@ public class SearchTrackService
                 DiscNumber = track.Position.Contains("-") ? (int.TryParse(track.Position.Split('-')[0], out int disc) ? disc : 1) : 1,
                 TrackNumber = track.Position.Contains("-") ? (int.TryParse(track.Position.Split('-')[1], out int trackNumber) ? trackNumber.ToString() : track.Position) : track.Position,
                 Label = string.Empty,
-                ISRC = string.Empty,
+                ISRC = track.Release.Identifiers
+                    .Where(id => string.Equals(id.Type, "ISRC"))
+                    .FirstOrDefault(id => string.Equals(id.Description, $"Track {track.Position}") ||
+                                                              string.Equals(id.Description, $"{track.Position}"))?.Value,
                 Album = new SearchTrackAlbumEntity
                 {
                     Id = track.Release.ReleaseId.ToString(),
@@ -234,7 +237,10 @@ public class SearchTrackService
                     Url = $"https://www.discogs.com/release/{track.Release.ReleaseId}",
                     Label = string.Empty,
                     Popularity = 0,
-                    UPC = string.Empty,
+                    UPC = track.Release.Identifiers
+                        .OrderByDescending(id => id.Description)
+                        .FirstOrDefault(id => 
+                            string.Equals(id.Type, "Barcode"))?.Value,
                     ProviderType = ProviderType.Discogs
                 },
                 Artists = track.Release.Artists?.Select(artist => new SearchTrackArtistEntity

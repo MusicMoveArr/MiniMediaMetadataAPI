@@ -80,7 +80,11 @@ public class DiscogsRepository
                                 album.masterid,
                                 track.TrackCount,
                                 dra.*,
-                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) AS Name
+                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) AS Name,
+                                dri.Releaseid,
+                                dri.Description,
+                                dri.Type,
+                                dri.Value
                          FROM discogs_release album
                          join discogs_release_artist dra on dra.releaseid = album.releaseid and dra.artistid = @artistId
                          join discogs_artist da on da.artistid = dra.artistid
@@ -88,6 +92,7 @@ public class DiscogsRepository
  	                        select count(track.releaseid) as TrackCount 
  	                        from discogs_release_track track 
  	                        where track.releaseid = album.releaseid) track on 1=1
+                         left join discogs_release_identifier dri on dri.releaseid = album.releaseid
                          where 
                              lower(album.title) % lower(@albumName)";
 
@@ -99,16 +104,20 @@ public class DiscogsRepository
         try
         {
             results = await conn
-                .QueryAsync<DiscogsRelease, DiscogsReleaseArtist, DiscogsRelease>(query,
-                    (album, artist) =>
+                .QueryAsync<DiscogsRelease, DiscogsReleaseArtist, DiscogsReleaseIdentifier, DiscogsRelease>(query,
+                    (album, artist, identifier) =>
                     {
                         if (artist != null)
                         {
                             album.Artists.Add(artist);
                         }
+                        if (identifier != null)
+                        {
+                            album.Identifiers.Add(identifier);
+                        }
                         return album;
                     },
-                    splitOn: "releaseid,releaseid",
+                    splitOn: "releaseid,releaseid,releaseid",
                     param: new
                     {
                         albumName,
@@ -137,6 +146,9 @@ public class DiscogsRepository
                     .DistinctBy(image => image.ArtistId)
                     .ToList();
 
+                album.Identifiers = group
+                    .SelectMany(album => album.Identifiers)
+                    .ToList();
                 return album;
             })
             .ToList();
@@ -158,7 +170,11 @@ public class DiscogsRepository
                                 album.masterid,
                                 track.TrackCount,
                                 dra.*,
-                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) AS Name
+                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) AS Name,
+                                dri.Releaseid,
+                                dri.Description,
+                                dri.Type,
+                                dri.Value
                          FROM discogs_release album
                          join discogs_release_artist dra on dra.releaseid = album.releaseid
                          join discogs_artist da on da.artistid = dra.artistid
@@ -166,21 +182,26 @@ public class DiscogsRepository
  	                        select count(track.releaseid) as TrackCount 
  	                        from discogs_release_track track 
  	                        where track.releaseid = album.releaseid) track on 1=1
+                         left join discogs_release_identifier dri on dri.releaseid = album.releaseid
                          where album.releaseid = @albumId";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
 
         var results = await conn
-            .QueryAsync<DiscogsRelease, DiscogsReleaseArtist, DiscogsRelease>(query,
-                (album, artist) =>
+            .QueryAsync<DiscogsRelease, DiscogsReleaseArtist, DiscogsReleaseIdentifier, DiscogsRelease>(query,
+                (album, artist, identifier) =>
                 {
                     if (artist != null)
                     {
                         album.Artists.Add(artist);
                     }
+                    if (identifier != null)
+                    {
+                        album.Identifiers.Add(identifier);
+                    }
                     return album;
                 },
-                splitOn: "releaseid,releaseid",
+                splitOn: "releaseid,releaseid,releaseid",
                 param: new
                 {
                     albumId
@@ -194,7 +215,11 @@ public class DiscogsRepository
                 
                 album.Artists = group
                     .SelectMany(album => album.Artists)
-                    .DistinctBy(image => image.ArtistId)
+                    .DistinctBy(artist => artist.ArtistId)
+                    .ToList();
+                
+                album.Identifiers = group
+                    .SelectMany(album => album.Identifiers)
                     .ToList();
 
                 return album;
@@ -221,7 +246,11 @@ public class DiscogsRepository
                                 album.masterid,
                                 track.TrackCount,
                                 dra.*,
-                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) as Name
+                                regexp_replace(da.name, ' \([0-9]*\)$', '' ) as Name,
+                                dri.Releaseid,
+                                dri.Description,
+                                dri.Type,
+                                dri.Value
                          FROM discogs_release_track dt
                          join discogs_release album on album.ReleaseId = dt.ReleaseId
                          join lateral (
@@ -231,6 +260,7 @@ public class DiscogsRepository
                          join discogs_release_artist release_dra on release_dra.ReleaseId = album.ReleaseId and release_dra.artistid = @artistId 
                          join discogs_release_artist dra on dra.ReleaseId = album.ReleaseId
                          join discogs_artist da on da.artistid = dra.artistid
+                         left join discogs_release_identifier dri on dri.releaseid = album.releaseid
                          where lower(dt.Title) % lower(@trackName)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
@@ -244,8 +274,9 @@ public class DiscogsRepository
                 .QueryAsync<DiscogsReleaseTrack, 
                     DiscogsRelease, 
                     DiscogsReleaseArtist, 
+                    DiscogsReleaseIdentifier,
                     DiscogsReleaseTrack>(query,
-                    (track, release, releaseArtist) =>
+                    (track, release, releaseArtist, identifier) =>
                     {
                         track.Release = release;
 
@@ -253,9 +284,13 @@ public class DiscogsRepository
                         {
                             track.Release.Artists.Add(releaseArtist);
                         }
+                        if (identifier != null)
+                        {
+                            track.Release.Identifiers.Add(identifier);
+                        }
                         return track;
                     },
-                    splitOn: "ReleaseId, ReleaseId",
+                    splitOn: "ReleaseId, ReleaseId, ReleaseId",
                     param: new
                     {
                         trackName,
@@ -287,6 +322,10 @@ public class DiscogsRepository
                 track.Release.Artists = group
                     .SelectMany(album => album.Release.Artists)
                     .DistinctBy(artist => artist.ArtistId)
+                    .ToList();
+                
+                track.Release.Identifiers = group
+                    .SelectMany(album => album.Release.Identifiers)
                     .ToList();
                 
                 return track;

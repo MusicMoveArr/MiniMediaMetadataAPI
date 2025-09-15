@@ -144,7 +144,10 @@ public class SearchAlbumService
                 Name = album.Title,
                 Popularity = 0,
                 Url = $"https://www.discogs.com/release/{album.ReleaseId}",
-                UPC = string.Empty,
+                UPC = album.Identifiers
+                    .OrderByDescending(id => id.Description)
+                    .FirstOrDefault(id => 
+                        string.Equals(id.Type, "Barcode"))?.Value,
                 Copyright = string.Empty,
                 Label = string.Empty,
                 ReleaseDate = album.Released,
@@ -296,7 +299,10 @@ public class SearchAlbumService
                 Name = discogsAlbum.Title,
                 Popularity = 0,
                 Url = $"https://www.discogs.com/release/{discogsAlbum.ReleaseId}",
-                UPC = string.Empty,
+                UPC = discogsAlbum.Identifiers
+                    .OrderByDescending(id => id.Description)
+                    .FirstOrDefault(id => 
+                        string.Equals(id.Type, "Barcode"))?.Value,
                 Copyright = string.Empty,
                 Label = string.Empty,
                 ReleaseDate = discogsAlbum.Released,

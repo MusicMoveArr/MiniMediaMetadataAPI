@@ -14,4 +14,5 @@ public class DiscogsRelease
     public int TrackCount { get; set; }
     
     public List<DiscogsReleaseArtist> Artists { get; set; } = new List<DiscogsReleaseArtist>();
+    public List<DiscogsReleaseIdentifier> Identifiers { get; set; } = new List<DiscogsReleaseIdentifier>();
 }
