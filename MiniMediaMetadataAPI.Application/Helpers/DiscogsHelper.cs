@@ -46,12 +46,16 @@ public static class DiscogsHelper
         //try get tracknumber
         //try get tracknumber from "xx-yy"
         //try get tracknumber that has prefix "Track" before it
-        string trackRegexPrefix = "^[(]{0,1}(CD|CDR|cd|cdr|CD\\\\-Rom){0,}[ ]*([0-9A-Z]*)[)]{0,1}[ \\\\-\\\\.\\\\\\/]*([0-9]*)[\\- ]*([0-9]*)(Track[ ]*([0-9]*))*";
-        
-        var prefixMatch = Regex.Match(track.Position, trackRegexPrefix);
+        string trackRegexPrefix = "^[(]{0,1}(cd-rom|cdr|cd){0,}[ ]*([0-9A-Z]*)[)]{0,1}[ \\-\\.\\\\\\/]*([0-9]*)[\\- ]*([0-9]*)(Track[ ]*([0-9]*))*";
+
+        var prefixMatch = Regex.Match(track.Position, trackRegexPrefix, RegexOptions.IgnoreCase);
         if (prefixMatch.Success)
         {
-            return int.TryParse(prefixMatch.Groups.Values.LastOrDefault()?.Value, out var trackNumber) ? trackNumber.ToString() : string.Empty;
+            var valueGroup = prefixMatch.Groups.Values
+                .LastOrDefault(group => !string.IsNullOrWhiteSpace(group.Value));
+            
+            return int.TryParse(valueGroup?.Value, out var trackNumber) 
+                ? trackNumber.ToString() : string.Empty;
         }
         
         return string.Empty;
