@@ -229,7 +229,7 @@ public class SearchTrackService
                 Album = new SearchTrackAlbumEntity
                 {
                     Id = track.Release.ReleaseId.ToString(),
-                    ArtistId = track.Release.Artists?.FirstOrDefault()?.ArtistId.ToString() ?? "0",
+                    ArtistId = track.Release.Artists?.FirstOrDefault(artist => artist.ArtistId == discogsArtistId)?.ArtistId.ToString() ?? "0",
                     Name = track.Release.Title,
                     Type = string.Empty,
                     ReleaseDate = track.Release.Released,
@@ -257,7 +257,6 @@ public class SearchTrackService
 
         return response;
     }
-    
     
     public async Task<SearchTrackResponse> SearchTrack(
         string id,
