@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using MiniMediaMetadataAPI.Application.Enums;
+using MiniMediaMetadataAPI.Application.Helpers;
 using MiniMediaMetadataAPI.Application.Models;
+using MiniMediaMetadataAPI.Application.Models.Database.Discogs;
 using MiniMediaMetadataAPI.Application.Models.Entities;
 using MiniMediaMetadataAPI.Application.Repositories;
 
@@ -219,8 +222,8 @@ public class SearchTrackService
                 Url = string.Empty,
                 Duration = !string.IsNullOrWhiteSpace(track.Duration) ? (TimeSpan.TryParseExact(track.Duration, ["m\\:ss", "h\\:mm\\:ss"], null, out var span) ? span : TimeSpan.Zero) : TimeSpan.Zero,
                 Explicit = track.Title?.Contains("(explicit") == true,
-                DiscNumber = track.Position.Contains("-") ? (int.TryParse(track.Position.Split('-')[0], out int disc) ? disc : 1) : 1,
-                TrackNumber = track.Position.Contains("-") ? (int.TryParse(track.Position.Split('-')[1], out int trackNumber) ? trackNumber.ToString() : track.Position) : track.Position,
+                DiscNumber = DiscogsHelper.GetDiscNumber(track),
+                TrackNumber = DiscogsHelper.GetTrackNumber(track),
                 Label = string.Empty,
                 ISRC = track.Release.Identifiers
                     .Where(id => string.Equals(id.Type, "ISRC"))
