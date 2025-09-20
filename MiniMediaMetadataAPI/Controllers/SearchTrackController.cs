@@ -23,7 +23,7 @@ public class SearchTrackController : ControllerBase
         request.ArtistId = StringHelper.RemoveControlChars(request.ArtistId);
         request.TrackId = StringHelper.RemoveControlChars(request.TrackId);
         request.TrackName = StringHelper.RemoveControlChars(request.TrackName);
-        Debug.WriteLine($"SearchArtist: ArtistId:{request.ArtistId}, TrackId:{request.TrackId}, TrackName:{request.TrackName}, Provider:{request.Provider}");
+        Debug.WriteLine($"SearchTrack: ArtistId:{request.ArtistId}, TrackId:{request.TrackId}, TrackName:{request.TrackName}, Provider:{request.Provider}");
         
         if (!string.IsNullOrWhiteSpace(request.TrackId))
         {
