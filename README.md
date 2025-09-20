@@ -17,13 +17,14 @@ https://github.com/MusicMoveArr/MusicMover
 2. Tidal
 3. Spotify
 4. Deezer
+5. Discogs
 
 # Features
 1. Low memory footprint (<250MB)
 2. Postgres support
-3. Search Artists Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer)
-4. Search Albums Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer)
-5. Search Tracks Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer)
+3. Search Artists Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer, Discogs)
+4. Search Albums Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer, Discogs)
+5. Search Tracks Metadata by ProviderType (Any, Tidal, MusicBrainz, Spotify, Deezer, Discogs)
 
 ## Docker compose
 ```
