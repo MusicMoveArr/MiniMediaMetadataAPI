@@ -1,5 +1,5 @@
 # MiniMedia Metadata API
-At last, an self-hosted Metadata API that supports multiple providers (Spotify, Tidal, MusicBrainz, Deezer)
+At last, an self-hosted Metadata API that supports multiple providers (Spotify, Tidal, MusicBrainz, Deezer, Discogs)
 
 The Restful API is quite straightforward, still a work in progress but does work
 
