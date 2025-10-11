@@ -418,4 +418,143 @@ public class TidalRepository
 
         return groupedResult;
     }
+    
+    public async Task<List<TidalTrackModel>?> SearchTrackByTrackIdAsync(int trackId)
+    {
+        string query = @"SELECT tt.TrackId, 
+                                tt.AlbumId, 
+                                tt.Title, 
+                                tt.ISRC,
+                                tt.duration::interval as Duration,
+                                tt.Copyright,
+                                tt.Explicit,
+                                tt.Popularity,
+                                tt.Availability,
+                                tt.MediaTags,
+                                tt.VolumeNumber,
+                                tt.TrackNumber,
+                                tt.Version,
+                                tte.*,
+                                album.albumid,
+                                album.artistid,
+                                album.title,
+                                album.barcodeid,
+                                album.numberofvolumes,
+                                album.numberofitems,
+                                album.duration::interval as Duration,
+                                album.explicit,
+                                album.releasedate,
+                                album.copyright,
+                                album.popularity,
+                                album.availability,
+                                album.mediatags,
+                                tae.*,
+                                tta.*,
+                                ta.name as ArtistName
+                         FROM tidal_track tt
+                         join tidal_album album on album.AlbumId = tt.albumid
+                         join tidal_track_artist tta on tta.trackid = tt.trackid
+                         join tidal_artist ta on ta.artistid = tta.artistid
+                         
+                         join tidal_track_external_link tte on tte.trackid = tt.trackid
+                         join tidal_album_external_link tae on tae.AlbumId = album.albumid
+                         
+                         where tt.TrackId = @trackId";
+
+        await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<TidalTrackModel>? results = null;
+
+        try
+        {
+            results = await conn
+                .QueryAsync<TidalTrackModel, 
+                            TidalTrackExternalLinkModel, 
+                            TidalAlbumModel, 
+                            TidalAlbumExternalLinkModel, 
+                            TidalTrackArtistModel, 
+                            TidalTrackModel>(query,
+                (track, trackExternalId, album, albumExternalId, trackArtist) =>
+                {
+                    if (track.ExternalLinks == null)
+                    {
+                        track.ExternalLinks = new List<TidalTrackExternalLinkModel>();
+                    }
+                    if (track.Images == null)
+                    {
+                        track.Images = new List<TidalTrackImageLinkModel>();
+                    }
+                    if (track.Artists == null)
+                    {
+                        track.Artists = new List<TidalTrackArtistModel>();
+                    }
+                    
+                    track.Album = album;
+
+                    if (track.Album != null)
+                    {
+                        track.Album.ExternalLinks = new List<TidalAlbumExternalLinkModel>();
+                    }
+
+                    if (albumExternalId != null)
+                    {
+                        track.Album.ExternalLinks.Add(albumExternalId);
+                    }
+                    if (trackExternalId != null)
+                    {
+                        track.ExternalLinks.Add(trackExternalId);
+                    }
+                    if (trackArtist != null)
+                    {
+                        track.Artists.Add(trackArtist);
+                    }
+                    if (trackArtist != null)
+                    {
+                        track.Artists.Add(trackArtist);
+                    }
+                    return track;
+                },
+                splitOn: "trackid,trackid,albumid,albumid,ArtistId",
+                param: new
+                {
+                    trackId
+                },
+                transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Parameters, trackId='{trackId}', Error={ex.Message}\r\nStackTrace={ex.StackTrace}");
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+
+        var groupedResult = results
+            ?.GroupBy(track => track.TrackId)
+            ?.Select(group =>
+            {
+                var track = group.First();
+                
+                track.Artists = group
+                    .SelectMany(album => album.Artists)
+                    .DistinctBy(artist => artist.ArtistId)
+                    .ToList();
+                
+                track.ExternalLinks = group
+                    .SelectMany(album => album.ExternalLinks)
+                    .DistinctBy(externalId => externalId.Href)
+                    .ToList();
+                
+                track.Images = group
+                    .SelectMany(album => album.Images)
+                    .DistinctBy(externalId => externalId.Href)
+                    .ToList();
+                return track;
+            })
+            .ToList();
+
+        return groupedResult;
+    }
 }

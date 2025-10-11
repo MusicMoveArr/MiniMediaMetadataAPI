@@ -327,4 +327,143 @@ public class MusicBrainzRepository
 
         return groupedResult;
     }
+    
+    public async Task<List<MusicBrainzArtistModel>?> SearchTrackByTrackIdAsync(Guid trackId)
+    {
+        string query = @"select track.ReleaseTrackId,
+		                        track.RecordingTrackId,
+		                        track.Title,
+		                        track.Status,
+		                        track.StatusId,
+		                        track.Length,
+		                        track.Number,
+		                        track.Position,
+		                        track.RecordingId,
+		                        track.RecordingLength,
+		                        track.RecordingTitle,
+		                        track.RecordingVideo,
+		                        track.MediaTrackCount,
+		                        track.MediaFormat,
+		                        track.MediaTitle,
+		                        track.MediaPosition,
+		                        track.MediaTrackOffset,
+                                release.ReleaseId,
+                                release.ArtistId,
+                                release.Title,
+                                release.Status,
+                                release.StatusId,
+                                release.Date,
+                                release.Barcode,
+                                release.Country,
+                                release.Disambiguation,
+                                release.Quality,
+                                ta.ArtistId,
+                                ta.ReleaseCount,
+                                ta.Name,
+                                ta.Type,
+                                ta.Country,
+                                ta.LastSyncTime,
+                                rl.ReleaseId,
+                                label.LabelId,
+                                label.AreaId,
+                                label.Name,
+                                label.Disambiguation,
+                                label.LabelCode,
+                                label.Type,
+                                label.LifeSpanBegin,
+                                label.LifeSpanEnd,
+                                label.LifeSpanEnded,
+                                label.SortName,
+                                label.TypeId,
+                                label.Country,
+                                ra.ArtistId,
+                                ra.ReleaseCount,
+                                ra.Name,
+                                ra.Type,
+                                ra.Country,
+                                ra.LastSyncTime
+                         from MusicBrainz_Release_Track track
+                         join MusicBrainz_Release release on release.ReleaseId = track.ReleaseId
+                         join MusicBrainz_Release_Track_Artist rta on rta.releasetrackid = track.releasetrackid
+                         join MusicBrainz_Artist ta on ta.artistid = rta.artistid
+                         join MusicBrainz_Artist ra on ra.artistid = release.artistid
+                         left join MusicBrainz_Release_Label rl on rl.releaseid = release.releaseid
+                         left join MusicBrainz_Label label on label.LabelId = rl.labelid
+                         where track.ReleaseTrackId = @trackId";
+
+        await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<MusicBrainzArtistModel>? results = null;
+
+        try
+        {
+            results = await conn
+                .QueryAsync<MusicBrainzReleaseTrackModel, 
+                    MusicBrainzReleaseModel, 
+                    MusicBrainzArtistModel, 
+                    MusicBrainzLabelModel,
+                    MusicBrainzArtistModel,
+                    MusicBrainzArtistModel>(query,
+                    (track, release, trackArtist, label, releaseArtist) =>
+                    {
+                        if (label != null)
+                        {
+                            release.Labels.Add(label);
+                        }
+
+                        if (track != null)
+                        {
+                            track.ReleaseId = release.ReleaseId;
+                            if (trackArtist != null)
+                            {
+                                track.TrackArtists.Add(trackArtist);
+                            }
+                            release.Tracks.Add(track);
+                        }
+
+                        if (release != null)
+                        {
+                            releaseArtist.Releases.Add(release);
+                        }
+                        return releaseArtist;
+                    },
+                    splitOn: "ReleaseTrackId,ReleaseId,ArtistId,LabelId,ArtistId",
+                    param: new
+                    {
+                        trackId
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Parameters, trackId='{trackId}', Error={ex.Message}\r\nStackTrace={ex.StackTrace}");
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+
+        var groupedResult = results
+            ?.GroupBy(artist => artist.ArtistId)
+            ?.Select(group =>
+            {
+                var artist = group.First();
+                
+                artist.Releases = group
+                    .SelectMany(release => release.Releases)
+                    .GroupBy(release => release.ReleaseId)
+                    .Select(release =>
+                    {
+                        var groupRelease = release.First();
+                        groupRelease.Tracks = release.SelectMany(track => track.Tracks).ToList();
+                        return groupRelease;
+                    })
+                    .ToList();
+                return artist;
+            })
+            .ToList();
+
+        return groupedResult;
+    }
 }

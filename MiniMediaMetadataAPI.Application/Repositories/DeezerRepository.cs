@@ -406,4 +406,114 @@ public class DeezerRepository
 
         return groupedResult;
     }
+    
+    public async Task<List<DeezerTrackModel>?> SearchTrackByTrackIdAsync(long trackId)
+    {
+        string query = @"SELECT dt.TrackId, 
+                                dt.Readable, 
+                                dt.Title, 
+                                dt.TitleShort,
+                                dt.TitleVersion,
+                                dt.ISRC,
+                                dt.duration,
+                                dt.TrackPosition,
+                                dt.DiskNumber,
+                                dt.Rank,
+                                dt.ReleaseDate,
+                                dt.ExplicitLyrics,
+                                dt.ExplicitContentLyrics,
+                                dt.ExplicitContentCover,
+                                dt.Preview,
+                                dt.BPM,
+                                dt.Gain,
+                                dt.Md5Image,
+                                dt.TrackToken,
+                                dt.ArtistId,
+                                dt.AlbumId,
+                                dt.Type,
+                                album.AlbumId,
+                                album.ArtistId,
+                                album.Title,
+                                album.Md5Image,
+                                album.GenreId,
+                                album.Fans,
+                                album.ReleaseDate,
+                                album.RecordType,
+                                album.ExplicitLyrics,
+                                album.ExplicitContentLyrics,
+                                album.ExplicitContentCover,
+                                album.Type,
+                                album.UPC,
+                                album.Label,
+                                album.NbTracks,
+                                album.duration,
+                                album.Available,
+                                dta.*,
+                                da.name as ArtistName
+                         FROM deezer_track dt
+                         join deezer_album album on album.AlbumId = dt.albumid
+                         join deezer_track_artist dta on dta.trackid = dt.trackid
+                         join deezer_artist da on da.artistid = dta.artistid
+                         where dt.TrackId = @trackId";
+
+        await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
+        await conn.OpenAsync();
+        var transaction = await conn.BeginTransactionAsync();
+        IEnumerable<DeezerTrackModel>? results = null;
+
+        try
+        {
+            results = await conn
+                .QueryAsync<DeezerTrackModel, 
+                    DeezerAlbumModel, 
+                    DeezerTrackArtistModel, 
+                    DeezerTrackModel>(query,
+                    (track, album, trackArtist) =>
+                    {
+                        if (track.Artists == null)
+                        {
+                            track.Artists = new List<DeezerTrackArtistModel>();
+                        }
+                    
+                        track.Album = album;
+
+                        if (trackArtist != null)
+                        {
+                            track.Artists.Add(trackArtist);
+                        }
+                        return track;
+                    },
+                    splitOn: "trackid,albumid,ArtistId",
+                    param: new
+                    {
+                        trackId
+                    },
+                    transaction: transaction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Parameters, trackId='{trackId}', Error={ex.Message}\r\nStackTrace={ex.StackTrace}");
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+
+        var groupedResult = results
+            ?.GroupBy(track => track.TrackId)
+            ?.Select(group =>
+            {
+                var track = group.First();
+                
+                track.Artists = group
+                    .SelectMany(album => album.Artists)
+                    .DistinctBy(artist => artist.ArtistId)
+                    .ToList();
+                
+                return track;
+            })
+            .ToList();
+
+        return groupedResult;
+    }
 }
