@@ -19,7 +19,9 @@ public class MusicBrainzRepository
         string query = @"SET LOCAL pg_trgm.similarity_threshold = 0.5;
                          SELECT * 
                          FROM MusicBrainz_Artist 
-                         where lower(name) % lower(@name)";
+                         where 
+                            lower(name) % lower(@name)
+                            or lower(sortname) % lower(@name)";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         await conn.OpenAsync();
@@ -219,6 +221,7 @@ public class MusicBrainzRepository
                                 ta.ArtistId,
                                 ta.ReleaseCount,
                                 ta.Name,
+                                ta.SortName,
                                 ta.Type,
                                 ta.Country,
                                 ta.LastSyncTime,
@@ -238,6 +241,7 @@ public class MusicBrainzRepository
                                 ra.ArtistId,
                                 ra.ReleaseCount,
                                 ra.Name,
+                                ra.SortName,
                                 ra.Type,
                                 ra.Country,
                                 ra.LastSyncTime
@@ -360,6 +364,7 @@ public class MusicBrainzRepository
                                 ta.ArtistId,
                                 ta.ReleaseCount,
                                 ta.Name,
+                                ta.SortName,
                                 ta.Type,
                                 ta.Country,
                                 ta.LastSyncTime,
@@ -379,6 +384,7 @@ public class MusicBrainzRepository
                                 ra.ArtistId,
                                 ra.ReleaseCount,
                                 ra.Name,
+                                ra.SortName,
                                 ra.Type,
                                 ra.Country,
                                 ra.LastSyncTime

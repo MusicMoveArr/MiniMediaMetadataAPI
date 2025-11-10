@@ -90,7 +90,11 @@ public class SearchArtistService
                 Url = $"https://musicbrainz.org/artist/{artist.ArtistId.ToString()}",
                 TotalFollowers = 0,
                 Genres = string.Empty,
-                LastSyncTime = artist.LastSyncTime
+                LastSyncTime = artist.LastSyncTime,
+                MusicBrainz = new SearchArtistMusicBrainzEntity
+                {
+                    SortName = artist.SortName
+                }
             }) ?? []);
         }
         if (provider is ProviderType.Any or ProviderType.Deezer)
@@ -209,7 +213,11 @@ public class SearchArtistService
                     Url = $"https://musicbrainz.org/artist/{musicBrainzArtist.ArtistId.ToString()}",
                     TotalFollowers = 0,
                     Genres = string.Empty,
-                    LastSyncTime = musicBrainzArtist.LastSyncTime
+                    LastSyncTime = musicBrainzArtist.LastSyncTime,
+                    MusicBrainz = new SearchArtistMusicBrainzEntity
+                    {
+                        SortName = musicBrainzArtist.SortName
+                    }
                 });
             }
         }

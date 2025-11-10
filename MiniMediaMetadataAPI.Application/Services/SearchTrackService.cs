@@ -152,7 +152,11 @@ public class SearchTrackService
                         Artists = track.TrackArtists?.Select(trackArtist => new SearchTrackArtistEntity
                         {
                             Id = trackArtist.ArtistId.ToString(),
-                            Name = trackArtist.Name
+                            Name = trackArtist.Name,
+                            MusicBrainz = new SearchTrackArtistMusicBrainzEntity
+                            {
+                                SortName = trackArtist.SortName
+                            }
                         }).ToList(),
                         MusicBrainz = new SearchTrackMusicBrainzEntity
                         {
@@ -380,7 +384,11 @@ public class SearchTrackService
                         Artists = track.TrackArtists?.Select(trackArtist => new SearchTrackArtistEntity
                         {
                             Id = trackArtist.ArtistId.ToString(),
-                            Name = trackArtist.Name
+                            Name = trackArtist.Name,
+                            MusicBrainz = new SearchTrackArtistMusicBrainzEntity
+                            {
+                                SortName = trackArtist.SortName
+                            }
                         }).ToList(),
                         MusicBrainz = new SearchTrackMusicBrainzEntity
                         {
