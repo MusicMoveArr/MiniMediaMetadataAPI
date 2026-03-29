@@ -245,14 +245,16 @@ public class MusicBrainzRepository
                                 ra.Type,
                                 ra.Country,
                                 ra.LastSyncTime
-                         from MusicBrainz_Release_Track track
-                         join MusicBrainz_Release release on release.ReleaseId = track.ReleaseId and release.ArtistId = @artistId
-                         join MusicBrainz_Release_Track_Artist rta on rta.releasetrackid = track.releasetrackid
+                         from MusicBrainz_Release_Track_Artist rta
+                         join MusicBrainz_Release_Track track on track.ReleaseTrackId = rta.ReleaseTrackId and lower(track.Title) % lower(@trackName)
+                         join MusicBrainz_Release release on release.ReleaseId = track.ReleaseId
                          join MusicBrainz_Artist ta on ta.artistid = rta.artistid
                          join MusicBrainz_Artist ra on ra.artistid = release.artistid
                          left join MusicBrainz_Release_Label rl on rl.releaseid = release.releaseid
                          left join MusicBrainz_Label label on label.LabelId = rl.labelid
-                         where lower(track.Title) % lower(@trackName)";
+                         where 
+                            rta.ArtistId = @artistId
+                            and rta.releasetrackid = track.releasetrackid";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         await conn.OpenAsync();
