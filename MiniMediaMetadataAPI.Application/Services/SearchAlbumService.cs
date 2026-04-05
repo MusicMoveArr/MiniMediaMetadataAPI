@@ -1,4 +1,5 @@
 using MiniMediaMetadataAPI.Application.Enums;
+using MiniMediaMetadataAPI.Application.Helpers;
 using MiniMediaMetadataAPI.Application.Models;
 using MiniMediaMetadataAPI.Application.Models.Entities;
 using MiniMediaMetadataAPI.Application.Repositories;
@@ -171,7 +172,7 @@ public class SearchAlbumService
             {
                 ProviderType = ProviderType.SoundCloud,
                 Id = album.Id.ToString(),
-                Name = album.Title,
+                Name = StringHelper.RemoveEmojis(album.Title),
                 Popularity = 0,
                 Url = album.PermalinkUrl,
                 UPC = string.Empty,
@@ -190,7 +191,7 @@ public class SearchAlbumService
                 Artists = [ new SearchAlbumArtistEntity
                 {
                     Id = album.Artist.Id.ToString(),
-                    Name = album.Artist.Title
+                    Name = StringHelper.RemoveEmojis(album.Artist.Title)
                 } ]
             }) ?? []);
         }
@@ -355,7 +356,7 @@ public class SearchAlbumService
                 ProviderType = ProviderType.SoundCloud,
                 Id = soundCloudAlbum.Id.ToString(),
                 ArtistId = soundCloudAlbum.Artist?.Id.ToString() ?? "0",
-                Name = soundCloudAlbum.Title,
+                Name = StringHelper.RemoveEmojis(soundCloudAlbum.Title),
                 Popularity = 0,
                 Url = soundCloudAlbum.PermalinkUrl,
                 UPC = string.Empty,
@@ -372,7 +373,7 @@ public class SearchAlbumService
                 Artists = [ new SearchAlbumArtistEntity
                 {
                     Id = soundCloudAlbum.Artist.Id.ToString(),
-                    Name = soundCloudAlbum.Artist.Title
+                    Name = StringHelper.RemoveEmojis(soundCloudAlbum.Artist.Title)
                 } ]
             });
         }

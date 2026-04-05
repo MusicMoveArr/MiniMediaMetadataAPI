@@ -357,7 +357,7 @@ public class SearchTrackService
             {
                 ProviderType = ProviderType.Tidal,
                 Id = track.TrackId.ToString(),
-                Name = track.FullName,
+                Name = StringHelper.RemoveEmojis(track.FullName),
                 Popularity = track.Popularity,
                 Url = track.ExternalLinks?.FirstOrDefault(link => link.Meta_Type == "TIDAL_SHARING")?.Href,
                 Duration = track.Duration,
@@ -370,7 +370,7 @@ public class SearchTrackService
                 {
                     Id = track.Album.AlbumId.ToString(),
                     ArtistId = track.Album.ArtistId.ToString(),
-                    Name = track.Album.Title,
+                    Name = StringHelper.RemoveEmojis(track.Album.Title),
                     Type = string.Empty,
                     ReleaseDate = track.Album.ReleaseDate,
                     TotalTracks = track.Album.NumberOfItems,
@@ -383,7 +383,7 @@ public class SearchTrackService
                 Artists = track.Artists?.Select(artist => new SearchTrackArtistEntity
                 {
                     Id = artist.ArtistId.ToString(),
-                    Name = artist.ArtistName
+                    Name = StringHelper.RemoveEmojis(artist.ArtistName)
                 }).ToList()
             }) ?? []);
         }
@@ -494,7 +494,7 @@ public class SearchTrackService
             {
                 ProviderType = ProviderType.SoundCloud,
                 Id = track.Id.ToString(),
-                Name = track.Title,
+                Name = StringHelper.RemoveEmojis(track.Title),
                 Popularity = 0,
                 Url = track.PermalinkUrl,
                 Duration = TimeSpan.FromMilliseconds(track.FullDuration),
@@ -507,7 +507,7 @@ public class SearchTrackService
                 {
                     Id = track.Album.Id.ToString(),
                     ArtistId = track.Album.Id.ToString(),
-                    Name = track.Album.Title,
+                    Name = StringHelper.RemoveEmojis(track.Album.Title),
                     Type = track.Album.SetType,
                     ReleaseDate = track.Album.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
                     TotalTracks = (int)track.Album.TrackCount,
@@ -520,7 +520,7 @@ public class SearchTrackService
                 Artists = track.Artists?.Select(artist => new SearchTrackArtistEntity
                 {
                     Id = artist.Id.ToString(),
-                    Name = artist.Username
+                    Name = StringHelper.RemoveEmojis(artist.Username)
                 }).ToList()
             }) ?? []);
         }
@@ -534,4 +534,6 @@ public class SearchTrackService
 
         return response;
     }
+    
+    
 }

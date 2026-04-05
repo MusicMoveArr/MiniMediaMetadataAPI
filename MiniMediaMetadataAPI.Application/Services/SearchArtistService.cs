@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MiniMediaMetadataAPI.Application.Enums;
+using MiniMediaMetadataAPI.Application.Helpers;
 using MiniMediaMetadataAPI.Application.Models;
 using MiniMediaMetadataAPI.Application.Models.Entities;
 using MiniMediaMetadataAPI.Application.Repositories;
@@ -143,7 +144,7 @@ public class SearchArtistService
             {
                 ProviderType = ProviderType.SoundCloud,
                 Id = artist.Id.ToString(),
-                Name = artist.Title,
+                Name = StringHelper.RemoveEmojis(artist.Title),
                 Popularity = 0,
                 Url = artist.Url,
                 TotalFollowers = 0,
@@ -289,7 +290,7 @@ public class SearchArtistService
                 {
                     ProviderType = ProviderType.SoundCloud,
                     Id = soundCloudArtist.Id.ToString(),
-                    Name = soundCloudArtist.Title,
+                    Name = StringHelper.RemoveEmojis(soundCloudArtist.Title),
                     Popularity = 0,
                     Url = soundCloudArtist.Url,
                     TotalFollowers = 0,
