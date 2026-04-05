@@ -7,5 +7,6 @@ public enum ProviderType
     Discogs,
     MusicBrainz,
     Spotify,
-    Tidal
+    Tidal,
+    SoundCloud
 }

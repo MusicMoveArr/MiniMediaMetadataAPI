@@ -16,19 +16,22 @@ public class SearchTrackService
     private readonly MusicBrainzRepository _musicBrainzRepository;
     private readonly DeezerRepository _deezerRepository;
     private readonly DiscogsRepository _discogsRepository;
+    private readonly SoundCloudRepository _soundCloudRepository;
     
     public SearchTrackService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
         MusicBrainzRepository musicBrainzRepository,
         DeezerRepository deezerRepository,
-        DiscogsRepository discogsRepository)
+        DiscogsRepository discogsRepository,
+        SoundCloudRepository soundCloudRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
         _deezerRepository = deezerRepository;
         _discogsRepository = discogsRepository;
+        _soundCloudRepository = soundCloudRepository;
     }
 
     public async Task<SearchTrackResponse> SearchTrack(
@@ -257,6 +260,44 @@ public class SearchTrackService
                 }).ToList()
             }) ?? []);
         }
+        if (provider is ProviderType.Any or ProviderType.SoundCloud && long.TryParse(artistId, out long longScArtistId))
+        {
+            var soundCloudTracks = await _soundCloudRepository.SearchTrackByArtistIdAsync(trackName, longScArtistId, offset);
+            searchResult.AddRange(soundCloudTracks?.Select(track => new SearchTrackEntity
+            {
+                ProviderType = ProviderType.SoundCloud,
+                Id = track.Id.ToString(),
+                Name = track.Title,
+                Popularity = 0,
+                Url = track.PermalinkUrl,
+                Duration = TimeSpan.FromMilliseconds(track.FullDuration),
+                Explicit = false,
+                DiscNumber = 0,
+                TrackNumber = track.TrackOrder.ToString(),
+                Label = track.Album.LabelName,
+                ISRC = string.Empty,
+                
+                Album = new SearchTrackAlbumEntity
+                {
+                    Id = track.Album.Id.ToString(),
+                    ArtistId = track.Album.Id.ToString(),
+                    Name = track.Album.Title,
+                    Type = track.Album.SetType,
+                    ReleaseDate = track.Album.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
+                    TotalTracks = (int)track.Album.TrackCount,
+                    Url = track.Album.PermalinkUrl,
+                    Label = track.Album.LabelName,
+                    Popularity = 0,
+                    UPC = string.Empty,
+                    ProviderType = ProviderType.SoundCloud
+                },
+                Artists = track.Artists?.Select(artist => new SearchTrackArtistEntity
+                {
+                    Id = artist.Id.ToString(),
+                    Name = artist.Username
+                }).ToList()
+            }) ?? []);
+        }
 
         response.SearchResult = searchResult.Any() ? SearchResultType.Ok : SearchResultType.NotFound;
         response.Tracks = searchResult;
@@ -443,6 +484,43 @@ public class SearchTrackService
                 {
                     Id = artist.ArtistId.ToString(),
                     Name = artist.ArtistName
+                }).ToList()
+            }) ?? []);
+        }
+        if (provider is ProviderType.Any or ProviderType.SoundCloud && long.TryParse(trackId, out long longScTrackId))
+        {
+            var soundCloudTracks = await _soundCloudRepository.SearchTrackByTrackIdAsync(longScTrackId);
+            searchResult.AddRange(soundCloudTracks?.Select(track => new SearchTrackEntity
+            {
+                ProviderType = ProviderType.SoundCloud,
+                Id = track.Id.ToString(),
+                Name = track.Title,
+                Popularity = 0,
+                Url = track.PermalinkUrl,
+                Duration = TimeSpan.FromMilliseconds(track.FullDuration),
+                Explicit = false,
+                DiscNumber = 0,
+                TrackNumber = track.TrackOrder.ToString(),
+                Label = track.Album.LabelName,
+                ISRC = string.Empty,
+                Album = new SearchTrackAlbumEntity
+                {
+                    Id = track.Album.Id.ToString(),
+                    ArtistId = track.Album.Id.ToString(),
+                    Name = track.Album.Title,
+                    Type = track.Album.SetType,
+                    ReleaseDate = track.Album.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
+                    TotalTracks = (int)track.Album.TrackCount,
+                    Url = track.Album.PermalinkUrl,
+                    Label = track.Album.LabelName,
+                    Popularity = 0,
+                    UPC = string.Empty,
+                    ProviderType = ProviderType.SoundCloud
+                },
+                Artists = track.Artists?.Select(artist => new SearchTrackArtistEntity
+                {
+                    Id = artist.Id.ToString(),
+                    Name = artist.Username
                 }).ToList()
             }) ?? []);
         }

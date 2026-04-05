@@ -13,19 +13,22 @@ public class SearchArtistService
     private readonly MusicBrainzRepository _musicBrainzRepository;
     private readonly DeezerRepository _deezerRepository;
     private readonly DiscogsRepository _discogsRepository;
+    private readonly SoundCloudRepository _soundCloudRepository;
     
     public SearchArtistService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
         MusicBrainzRepository musicBrainzRepository,
         DeezerRepository deezerRepository,
-        DiscogsRepository discogsRepository)
+        DiscogsRepository discogsRepository,
+        SoundCloudRepository soundCloudRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
         _deezerRepository = deezerRepository;
         _discogsRepository = discogsRepository;
+        _soundCloudRepository = soundCloudRepository;
     }
 
     public async Task<SearchArtistResponse> SearchArtist(
@@ -131,6 +134,21 @@ public class SearchArtistService
                 TotalFollowers = 0,
                 Genres = string.Empty,
                 //LastSyncTime = artist.LastSyncTime
+            }) ?? []);
+        }
+        if (provider is ProviderType.Any or ProviderType.SoundCloud)
+        {
+            var soundCloudArtists = await _soundCloudRepository.SearchArtistAsync(name, offset);
+            searchResult.AddRange(soundCloudArtists?.Select(artist => new SearchArtistEntity
+            {
+                ProviderType = ProviderType.SoundCloud,
+                Id = artist.Id.ToString(),
+                Name = artist.Title,
+                Popularity = 0,
+                Url = artist.Url,
+                TotalFollowers = 0,
+                Genres = string.Empty,
+                LastSyncTime = artist.LastSyncTime
             }) ?? []);
         }
 
@@ -257,6 +275,23 @@ public class SearchArtistService
                     Name = discogsArtist.Name,
                     Popularity = 0,
                     Url = $"https://www.discogs.com/artist/{discogsArtist.ArtistId}",
+                    TotalFollowers = 0,
+                    Genres = string.Empty
+                });
+            }
+        }
+        if (provider is ProviderType.SoundCloud && int.TryParse(id, out int soundCloudArtistId))
+        {
+            var soundCloudArtist = await _soundCloudRepository.GetArtistByIdAsync(soundCloudArtistId);
+            if (soundCloudArtist != null)
+            {
+                searchResult.Add(new SearchArtistEntity
+                {
+                    ProviderType = ProviderType.SoundCloud,
+                    Id = soundCloudArtist.Id.ToString(),
+                    Name = soundCloudArtist.Title,
+                    Popularity = 0,
+                    Url = soundCloudArtist.Url,
                     TotalFollowers = 0,
                     Genres = string.Empty
                 });

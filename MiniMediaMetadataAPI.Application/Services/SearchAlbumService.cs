@@ -12,19 +12,22 @@ public class SearchAlbumService
     private readonly MusicBrainzRepository _musicBrainzRepository;
     private readonly DeezerRepository _deezerRepository;
     private readonly DiscogsRepository _discogsRepository;
+    private readonly SoundCloudRepository _soundCloudRepository;
     
     public SearchAlbumService(
         SpotifyRepository spotifyRepository,
         TidalRepository tidalRepository,
         MusicBrainzRepository musicBrainzRepository,
         DeezerRepository deezerRepository,
-        DiscogsRepository discogsRepository)
+        DiscogsRepository discogsRepository,
+        SoundCloudRepository soundCloudRepository)
     {
         _spotifyRepository = spotifyRepository;
         _tidalRepository = tidalRepository;
         _musicBrainzRepository = musicBrainzRepository;
         _deezerRepository = deezerRepository;
         _discogsRepository = discogsRepository;
+        _soundCloudRepository = soundCloudRepository;
     }
 
     public async Task<SearchAlbumResponse> SearchAlbum(
@@ -159,6 +162,36 @@ public class SearchAlbumService
                     Id = artist.ArtistId.ToString(),
                     Name = artist.Name
                 }).ToList()
+            }) ?? []);
+        }
+        if (provider is ProviderType.Any or ProviderType.SoundCloud && long.TryParse(artistId, out long longSCArtistId))
+        {
+            var soundCloudAlbums = await _soundCloudRepository?.SearchAlbumByArtistIdAsync(name, longSCArtistId, offset);
+            searchResult.AddRange(soundCloudAlbums?.Select(album => new SearchAlbumEntity
+            {
+                ProviderType = ProviderType.SoundCloud,
+                Id = album.Id.ToString(),
+                Name = album.Title,
+                Popularity = 0,
+                Url = album.PermalinkUrl,
+                UPC = string.Empty,
+                Copyright = string.Empty,
+                Label = album.LabelName,
+                ReleaseDate = album.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                TotalTracks = (int)album.TrackCount,
+                Type = album.SetType,
+                ArtistId = album.UserId.ToString(),
+                Images = [
+                    new SearchAlbumImageEntity
+                    {
+                        Url = album.ArtworkUrl
+                    }
+                ],
+                Artists = [ new SearchAlbumArtistEntity
+                {
+                    Id = album.Artist.Id.ToString(),
+                    Name = album.Artist.Title
+                } ]
             }) ?? []);
         }
 
@@ -312,6 +345,35 @@ public class SearchAlbumService
                     Id = artist.ArtistId.ToString(),
                     Name = artist.Name
                 }).ToList()
+            });
+        }
+        if (provider is ProviderType.SoundCloud && long.TryParse(id, out long soundCloudAlbumId))
+        {
+            var soundCloudAlbum = await _soundCloudRepository.GetAlbumIdAsync(soundCloudAlbumId);
+            searchResult.Add(new SearchAlbumEntity
+            {
+                ProviderType = ProviderType.SoundCloud,
+                Id = soundCloudAlbum.Id.ToString(),
+                ArtistId = soundCloudAlbum.Artist?.Id.ToString() ?? "0",
+                Name = soundCloudAlbum.Title,
+                Popularity = 0,
+                Url = soundCloudAlbum.PermalinkUrl,
+                UPC = string.Empty,
+                Copyright = string.Empty,
+                Label = soundCloudAlbum.LabelName,
+                ReleaseDate = soundCloudAlbum.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                TotalTracks = (int)soundCloudAlbum.TrackCount,
+                Images = [
+                    new SearchAlbumImageEntity
+                    {
+                        Url = soundCloudAlbum.ArtworkUrl
+                    }
+                ],
+                Artists = [ new SearchAlbumArtistEntity
+                {
+                    Id = soundCloudAlbum.Artist.Id.ToString(),
+                    Name = soundCloudAlbum.Artist.Title
+                } ]
             });
         }
 
