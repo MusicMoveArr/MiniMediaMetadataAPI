@@ -197,7 +197,7 @@ public class SoundCloudRepository
                          join soundcloud_playlist_track spt on spt.trackId = track.Id and spt.UserId = @artistId
                          join soundcloud_playlist playlist on playlist.Id = spt.PlaylistId and playlist.UserId = @artistId
                          join soundcloud_user u on u.Id = playlist.UserId
-                         where lower(track.Title) % lower(@trackName)";
+                         where lower(track.Title) % lower(@trackName) and publishermetadata_id != '0'";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         await conn.OpenAsync();
@@ -292,7 +292,7 @@ public class SoundCloudRepository
                          join soundcloud_playlist_track spt on spt.trackId = track.Id
                          join soundcloud_playlist playlist on playlist.Id = spt.PlaylistId and playlist.UserId = spt.UserId
                          join soundcloud_user u on u.Id = playlist.UserId
-                         where track.Id = @trackId";
+                         where track.Id = @trackId and publishermetadata_id != '0'";
 
         await using var conn = new NpgsqlConnection(_databaseConfiguration.ConnectionString);
         await conn.OpenAsync();
