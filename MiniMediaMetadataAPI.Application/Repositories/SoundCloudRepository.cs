@@ -190,6 +190,7 @@ public class SoundCloudRepository
                                 track.Urn,
                                 track.CreatedAt,
                                 track.LastModified,
+                                spt.TrackOrder,
                                 playlist.*,
                                 u.*
                          FROM soundcloud_track track
@@ -284,6 +285,7 @@ public class SoundCloudRepository
                                 track.Urn,
                                 track.CreatedAt,
                                 track.LastModified,
+                                spt.TrackOrder,
                                 playlist.*,
                                 u.*
                          FROM soundcloud_track track
