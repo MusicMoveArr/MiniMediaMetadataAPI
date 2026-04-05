@@ -280,7 +280,7 @@ public class SearchTrackService
                 Album = new SearchTrackAlbumEntity
                 {
                     Id = track.Album.Id.ToString(),
-                    ArtistId = track.Album.Id.ToString(),
+                    ArtistId = track.Album.Artist.Id.ToString(),
                     Name = track.Album.Title,
                     Type = track.Album.SetType,
                     ReleaseDate = track.Album.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
@@ -506,7 +506,7 @@ public class SearchTrackService
                 Album = new SearchTrackAlbumEntity
                 {
                     Id = track.Album.Id.ToString(),
-                    ArtistId = track.Album.Id.ToString(),
+                    ArtistId = track.Album.Artist.Id.ToString(),
                     Name = StringHelper.RemoveEmojis(track.Album.Title),
                     Type = track.Album.SetType,
                     ReleaseDate = track.Album.ReleaseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
